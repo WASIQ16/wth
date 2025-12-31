@@ -141,4 +141,36 @@ router.put('/reset-password', [
     }
 });
 
+// @route   PUT api/auth/update-profile
+// @desc    Update user profile (fullName)
+router.put('/update-profile', [
+    auth,
+    check('fullName', 'Name is required').not().isEmpty()
+], async (req, res) => {
+    console.log('👤 Update Profile Request for User:', req.user.id);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { fullName } = req.body;
+
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.fullName = fullName;
+        await user.save();
+
+        console.log('✅ Profile Update Successful for:', user.email);
+        res.json({ message: 'Profile updated successfully', user: { id: user.id, fullName: user.fullName, email: user.email } });
+
+    } catch (err) {
+        console.error('💥 Update Profile Server Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;

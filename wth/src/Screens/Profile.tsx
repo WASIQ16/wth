@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { getProfile, resetPassword } from '../api/auth';
+import { getProfile, resetPassword, updateProfile } from '../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Profile = () => {
@@ -31,6 +31,7 @@ const Profile = () => {
     const [email, setEmail] = useState('');
     const [tempName, setTempName] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isSavingName, setIsSavingName] = useState(false);
     const [loading, setLoading] = useState(true);
 
     // Password Reset States
@@ -99,13 +100,39 @@ const Profile = () => {
         }
     };
 
-    const handleSaveName = () => {
+    const handleSaveName = async () => {
         if (!tempName.trim()) {
             Alert.alert('Error', 'Name cannot be empty');
             return;
         }
-        setFullName(tempName);
-        setIsEditingName(false);
+
+        if (tempName === fullName) {
+            setIsEditingName(false);
+            return;
+        }
+
+        setIsSavingName(true);
+        try {
+            await updateProfile(tempName);
+            setFullName(tempName);
+            setIsEditingName(false);
+
+            // Update local user data if stored
+            const stored = await AsyncStorage.getItem('user_data');
+            if (stored) {
+                const userData = JSON.parse(stored);
+                userData.fullName = tempName;
+                await AsyncStorage.setItem('user_data', JSON.stringify(userData));
+            }
+
+            Alert.alert('Success', 'Profile name updated successfully');
+        } catch (error: any) {
+            const message = error.message || 'Failed to update name';
+            Alert.alert('Error', message);
+            setTempName(fullName);
+        } finally {
+            setIsSavingName(false);
+        }
     };
 
     const handleCancelName = () => {
@@ -184,8 +211,12 @@ const Profile = () => {
                                 </TouchableOpacity>
                             ) : (
                                 <View style={styles.editActions}>
-                                    <TouchableOpacity onPress={handleSaveName} style={styles.saveAction}>
-                                        <Text style={styles.saveActionText}>Save</Text>
+                                    <TouchableOpacity onPress={handleSaveName} style={styles.saveAction} disabled={isSavingName}>
+                                        {isSavingName ? (
+                                            <ActivityIndicator size="small" color="#68BA7F" />
+                                        ) : (
+                                            <Text style={styles.saveActionText}>Save</Text>
+                                        )}
                                     </TouchableOpacity>
                                     <TouchableOpacity onPress={handleCancelName}>
                                         <Text style={styles.cancelActionText}>Cancel</Text>

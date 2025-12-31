@@ -58,3 +58,13 @@ export const resetPassword = async (currentPassword: string, newPassword: string
         throw error.response?.data || { message: 'Failed to reset password' };
     }
 };
+export const updateProfile = async (fullName: string): Promise<any> => {
+    console.log('📡 Calling Update Profile API...', { fullName });
+    try {
+        const response = await apiClient.put('/auth/update-profile', { fullName });
+        return response.data;
+    } catch (error: any) {
+        console.error('❌ Update Profile API Error:', error.response?.status, error.response?.data);
+        throw error.response?.data || { message: 'Failed to update profile' };
+    }
+};
