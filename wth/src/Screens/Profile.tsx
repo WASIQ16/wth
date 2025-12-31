@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { getProfile, resetPassword, updateProfile } from '../api/auth';
+import { getProfile, resetPassword, updateProfile, uploadProfileImage } from '../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Profile = () => {
@@ -32,6 +32,7 @@ const Profile = () => {
     const [tempName, setTempName] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
     const [isSavingName, setIsSavingName] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [loading, setLoading] = useState(true);
 
     // Password Reset States
@@ -51,6 +52,9 @@ const Profile = () => {
             setFullName(data.fullName);
             setTempName(data.fullName);
             setEmail(data.email);
+            if (data.profileImage) {
+                setProfileImage({ uri: data.profileImage });
+            }
             setLoading(false);
         } catch (error: any) {
             setLoading(false);
@@ -95,8 +99,28 @@ const Profile = () => {
             console.log('ImagePicker Error: ', result.errorMessage);
             Alert.alert('Error', result.errorMessage || 'Failed to pick image');
         } else if (result.assets && result.assets.length > 0) {
-            const source = { uri: result.assets[0].uri };
-            setProfileImage(source);
+            const asset = result.assets[0];
+            const source = { uri: asset.uri };
+
+            // Start uploading to Cloudinary via Backend
+            setIsUploadingImage(true);
+            try {
+                const formData = new FormData();
+                formData.append('avatar', {
+                    uri: asset.uri,
+                    type: asset.type || 'image/jpeg',
+                    name: asset.fileName || 'profile.jpg',
+                } as any);
+
+                const response = await uploadProfileImage(formData);
+                setProfileImage({ uri: response.profileImage });
+                Alert.alert('Success', 'Profile image updated successfully');
+            } catch (error: any) {
+                console.error('Error uploading image:', error);
+                Alert.alert('Error', error.message || 'Failed to upload image');
+            } finally {
+                setIsUploadingImage(false);
+            }
         }
     };
 
@@ -184,7 +208,11 @@ const Profile = () => {
                 {/* Profile Image Section */}
                 <View style={styles.imageSection}>
                     <View style={styles.imageWrapper}>
-                        {profileImage ? (
+                        {isUploadingImage ? (
+                            <View style={[styles.profileImage, styles.imagePlaceholder, isDarkMode && styles.darkPlaceholder]}>
+                                <ActivityIndicator size="large" color="#68BA7F" />
+                            </View>
+                        ) : profileImage ? (
                             <Image source={profileImage} style={styles.profileImage} />
                         ) : (
                             <View style={[styles.profileImage, styles.imagePlaceholder, isDarkMode && styles.darkPlaceholder]}>
@@ -194,6 +222,7 @@ const Profile = () => {
                         <TouchableOpacity
                             style={[styles.editButton, isDarkMode && styles.darkEditButton]}
                             onPress={handleSelectImage}
+                            disabled={isUploadingImage}
                         >
                             <Text style={styles.editButtonText}>✎</Text>
                         </TouchableOpacity>

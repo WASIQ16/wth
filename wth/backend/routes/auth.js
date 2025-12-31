@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const upload = require('../config/cloudinaryConfig');
 const { check, validationResult } = require('express-validator');
 
 // @route   POST api/auth/signup
@@ -169,6 +170,36 @@ router.put('/update-profile', [
 
     } catch (err) {
         console.error('💥 Update Profile Server Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/auth/upload-avatar
+// @desc    Upload user avatar to Cloudinary
+router.post('/upload-avatar', [auth, upload.single('avatar')], async (req, res) => {
+    console.log('🖼️  Avatar Upload Request for User:', req.user.id);
+
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.profileImage = req.file.path; // Cloudinary URL
+        await user.save();
+
+        console.log('✅ Avatar Upload Successful for:', user.email);
+        res.json({
+            message: 'Avatar uploaded successfully',
+            profileImage: user.profileImage
+        });
+
+    } catch (err) {
+        console.error('💥 Avatar Upload Server Error:', err.message);
         res.status(500).send('Server Error');
     }
 });
