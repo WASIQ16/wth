@@ -176,7 +176,7 @@ router.put('/update-profile', [
 
 // @route   POST api/auth/upload-avatar
 // @desc    Upload user avatar to Cloudinary
-router.post('/upload-avatar', [auth, upload.single('avatar')], async (req, res) => {
+router.post('/upload-avatar', [auth, upload.single('avatar')], async (req, res, next) => {
     console.log('🖼️  Avatar Upload Request for User:', req.user.id);
 
     try {
@@ -200,7 +200,7 @@ router.post('/upload-avatar', [auth, upload.single('avatar')], async (req, res) 
 
     } catch (err) {
         console.error('💥 Avatar Upload Server Error:', err.message);
-        res.status(500).send('Server Error');
+        next(err);
     }
 });
 

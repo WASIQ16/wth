@@ -41,6 +41,16 @@ app.get('/health', (req, res) => {
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('💥 Backend Error:', err.stack);
+    res.status(500).json({
+        message: 'Internal Server Error',
+        error: err.message,
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
