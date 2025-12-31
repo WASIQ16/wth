@@ -112,12 +112,24 @@ const Profile = () => {
                     name: asset.fileName || 'profile.jpg',
                 } as any);
 
+                console.log('📤 Uploading image with details:', {
+                    uri: asset.uri,
+                    type: asset.type,
+                    fileName: asset.fileName,
+                    fileSize: asset.fileSize
+                });
+
                 const response = await uploadProfileImage(formData);
                 setProfileImage({ uri: response.profileImage });
                 Alert.alert('Success', 'Profile image updated successfully');
             } catch (error: any) {
                 console.error('Error uploading image:', error);
-                Alert.alert('Error', error.message || 'Failed to upload image');
+                console.error('Error details:', JSON.stringify(error, null, 2));
+
+                // Show detailed error message
+                const errorMsg = error.error || error.message || 'Failed to upload image';
+                const errorCode = error.code ? ` (Code: ${error.code})` : '';
+                Alert.alert('Error', `${errorMsg}${errorCode}`);
             } finally {
                 setIsUploadingImage(false);
             }

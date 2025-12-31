@@ -177,12 +177,26 @@ router.put('/update-profile', [
 // @route   POST api/auth/upload-avatar
 // @desc    Upload user avatar to Cloudinary
 router.post('/upload-avatar', auth, (req, res, next) => {
+    console.log('🔍 Upload Avatar - Auth passed, starting multer...');
     upload.single('avatar')(req, res, (err) => {
         if (err) {
             console.error('💥 Multer Error:', err.message);
+            console.error('💥 Multer Error Stack:', err.stack);
+            console.error('💥 Multer Error Code:', err.code);
             return res.status(400).json({
                 message: 'File upload error',
-                error: err.message
+                error: err.message,
+                code: err.code
+            });
+        }
+        console.log('✅ Multer processing complete');
+        console.log('📎 File received:', req.file ? 'Yes' : 'No');
+        if (req.file) {
+            console.log('📎 File details:', {
+                fieldname: req.file.fieldname,
+                originalname: req.file.originalname,
+                mimetype: req.file.mimetype,
+                size: req.file.size
             });
         }
         next();
