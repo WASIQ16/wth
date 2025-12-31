@@ -68,3 +68,18 @@ export const updateProfile = async (fullName: string): Promise<any> => {
         throw error.response?.data || { message: 'Failed to update profile' };
     }
 };
+
+export const uploadProfileImage = async (formData: FormData): Promise<any> => {
+    console.log('📡 Calling Upload Avatar API...');
+    try {
+        const response = await apiClient.post('/auth/upload-avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error('❌ Upload Avatar API Error:', error.response?.status, error.response?.data);
+        throw error.response?.data || { message: 'Failed to upload image' };
+    }
+};
