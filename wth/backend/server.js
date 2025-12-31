@@ -7,7 +7,10 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 
 // Middleware
-app.use(express.json());
+// Only parse JSON for application/json content-type
+app.use(express.json({
+    type: 'application/json'
+}));
 app.use(cors());
 
 // Request Logger
