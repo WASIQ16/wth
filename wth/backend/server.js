@@ -44,8 +44,14 @@ app.use('/api/auth', authRoutes);
 // Global Error Handler
 app.use((err, req, res, next) => {
     console.error('💥 Backend Error:', err.stack);
-    res.status(500).json({
-        message: 'Internal Server Error',
+
+    // Don't send response if headers already sent
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal Server Error',
         error: err.message,
         details: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });

@@ -176,7 +176,18 @@ router.put('/update-profile', [
 
 // @route   POST api/auth/upload-avatar
 // @desc    Upload user avatar to Cloudinary
-router.post('/upload-avatar', [auth, upload.single('avatar')], async (req, res, next) => {
+router.post('/upload-avatar', auth, (req, res, next) => {
+    upload.single('avatar')(req, res, (err) => {
+        if (err) {
+            console.error('💥 Multer Error:', err.message);
+            return res.status(400).json({
+                message: 'File upload error',
+                error: err.message
+            });
+        }
+        next();
+    });
+}, async (req, res, next) => {
     console.log('🖼️  Avatar Upload Request for User:', req.user.id);
 
     try {
