@@ -1,4 +1,4 @@
-export type RouteName = 'Home' | 'Report' | 'Result' | 'Services' | 'Splash' | 'Onboarding' | 'Login' | 'Signup' | 'Profile';
+export type RouteName = 'Home' | 'Report' | 'Result' | 'Services' | 'Splash' | 'Onboarding' | 'Login' | 'Signup' | 'Profile' | 'ForgotPassword' | 'ResetPassword';
 export type Route = { name: RouteName; params?: any };
 
 export type AppNav = {

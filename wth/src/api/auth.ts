@@ -82,3 +82,39 @@ export const uploadProfileImage = async (formData: FormData): Promise<any> => {
         throw error.response?.data || { message: 'Failed to upload image' };
     }
 };
+
+export const forgotPassword = async (email: string): Promise<any> => {
+    console.log('📡 Calling Forgot Password API...', { email });
+    try {
+        const response = await apiClient.post('/auth/forgot-password', { email });
+        console.log('✅ Forgot Password Success:', response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error('❌ Forgot Password API Error:', error.response?.status, error.response?.data);
+        throw error.response?.data || { message: 'Failed to send reset email' };
+    }
+};
+
+export const verifyResetToken = async (token: string): Promise<any> => {
+    console.log('📡 Calling Verify Reset Token API...');
+    try {
+        const response = await apiClient.post('/auth/verify-reset-token', { token });
+        return response.data;
+    } catch (error: any) {
+        console.error('❌ Verify Reset Token API Error:', error.response?.status, error.response?.data);
+        throw error.response?.data || { message: 'Invalid or expired token' };
+    }
+};
+
+export const resetPasswordWithToken = async (token: string, newPassword: string): Promise<any> => {
+    console.log('📡 Calling Reset Password API...');
+    try {
+        const response = await apiClient.post('/auth/reset-password', { token, newPassword });
+        console.log('✅ Reset Password Success:', response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error('❌ Reset Password API Error:', error.response?.status, error.response?.data);
+        throw error.response?.data || { message: 'Failed to reset password' };
+    }
+};
+

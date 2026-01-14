@@ -14,41 +14,52 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
-import { loginUser } from '../api/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { resetPasswordWithToken } from '../api/auth';
 
-const Login = () => {
+const ResetPassword = () => {
     const navigation = useAppNavigation();
     const { isDarkMode } = useTheme();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [token, setToken] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password');
+    const handleSubmit = async () => {
+        if (!token || !newPassword || !confirmPassword) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            Alert.alert('Error', 'Password must be at least 6 characters long');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
             return;
         }
 
         setLoading(true);
         try {
-            const data = await loginUser(email, password);
-
-            // Store token securely
-            await AsyncStorage.setItem('user_token', data.token);
-            await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
-
+            await resetPasswordWithToken(token, newPassword);
             setLoading(false);
-            navigation.replace('Home');
+
+            Alert.alert(
+                'Success',
+                'Your password has been reset successfully. You can now login with your new password.',
+                [
+                    {
+                        text: 'Go to Login',
+                        onPress: () => navigation.replace('Login')
+                    }
+                ]
+            );
         } catch (error: any) {
             setLoading(false);
-            const message = error.message || (error.errors && error.errors[0]?.msg) || 'Invalid login details';
-            Alert.alert('Login Failed', message);
+            const message = error.message || (error.errors && error.errors[0]?.msg) || 'Failed to reset password';
+            Alert.alert('Error', message);
         }
-    };
-
-    const handleForgotPassword = () => {
-        navigation.navigate('ForgotPassword');
     };
 
     return (
@@ -59,63 +70,70 @@ const Login = () => {
             >
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     <View style={styles.header}>
-                        <Text style={[styles.title, isDarkMode && styles.darkTitle]}>Welcome Back</Text>
-                        <Text style={[styles.subtitle, isDarkMode && styles.darkSubtitle]}>Login to your account</Text>
+                        <Text style={[styles.title, isDarkMode && styles.darkTitle]}>Reset Password</Text>
+                        <Text style={[styles.subtitle, isDarkMode && styles.darkSubtitle]}>
+                            Enter the reset code from your email and choose a new password.
+                        </Text>
                     </View>
 
                     {/* Input Fields */}
                     <View style={styles.form}>
-                        <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Email Address</Text>
+                        <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Reset Code</Text>
                         <TextInput
                             style={[styles.input, isDarkMode && styles.darkInput]}
-                            placeholder="john@example.com"
+                            placeholder="Enter reset code from email"
                             placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                            keyboardType="email-address"
                             autoCapitalize="none"
-                            value={email}
-                            onChangeText={setEmail}
+                            value={token}
+                            onChangeText={setToken}
                         />
 
-                        <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Password</Text>
+                        <Text style={[styles.label, isDarkMode && styles.darkLabel]}>New Password</Text>
                         <TextInput
                             style={[styles.input, isDarkMode && styles.darkInput]}
                             placeholder="••••••••"
                             placeholderTextColor={isDarkMode ? "#666" : "#999"}
                             secureTextEntry
-                            value={password}
-                            onChangeText={setPassword}
+                            value={newPassword}
+                            onChangeText={setNewPassword}
                         />
 
-                        <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn}>
-                            <Text style={[styles.forgotText, isDarkMode && styles.darkLinkText]}>Forgot Password?</Text>
-                        </TouchableOpacity>
+                        <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Confirm New Password</Text>
+                        <TextInput
+                            style={[styles.input, isDarkMode && styles.darkInput]}
+                            placeholder="••••••••"
+                            placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                            secureTextEntry
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                        />
 
                         <TouchableOpacity
                             style={styles.actionBtn}
-                            onPress={handleLogin}
+                            onPress={handleSubmit}
                             disabled={loading}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text style={styles.actionBtnText}>Login</Text>
+                                <Text style={styles.actionBtnText}>Reset Password</Text>
                             )}
                         </TouchableOpacity>
                     </View>
 
                     {/* Footer Links */}
                     <View style={styles.footer}>
-                        <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                             <Text style={[styles.footerText, isDarkMode && styles.darkSubtitle]}>
-                                Don't have an account? <Text style={[styles.linkText, isDarkMode && styles.darkLinkText]}>Sign Up</Text>
+                                Didn't receive a code? <Text style={[styles.linkText, isDarkMode && styles.darkLinkText]}>Resend</Text>
                             </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            style={styles.guestBtn}
-                            onPress={() => navigation.replace('Home')}
+                            style={styles.backBtn}
+                            onPress={() => navigation.replace('Login')}
                         >
-                            <Text style={styles.guestText}>Continue as Guest</Text>
+                            <Text style={[styles.backText, isDarkMode && styles.darkSubtitle]}>Back to Login</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -152,6 +170,7 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 16,
         color: '#666',
+        lineHeight: 24,
     },
     darkSubtitle: {
         color: '#888',
@@ -184,14 +203,6 @@ const styles = StyleSheet.create({
         borderColor: '#1F1F1F',
         color: '#FFF',
     },
-    forgotBtn: {
-        alignSelf: 'flex-end',
-        marginBottom: 20,
-    },
-    forgotText: {
-        color: '#68BA7F',
-        fontWeight: '600',
-    },
     actionBtn: {
         backgroundColor: '#253D2C',
         paddingVertical: 16,
@@ -202,6 +213,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 3,
+        marginTop: 10,
     },
     actionBtnText: {
         color: '#fff',
@@ -215,7 +227,7 @@ const styles = StyleSheet.create({
     footerText: {
         fontSize: 14,
         color: '#666',
-        marginBottom: 20,
+        marginBottom: 15,
     },
     linkText: {
         color: '#68BA7F',
@@ -224,14 +236,14 @@ const styles = StyleSheet.create({
     darkLinkText: {
         color: '#68BA7F',
     },
-    guestBtn: {
+    backBtn: {
         padding: 10,
     },
-    guestText: {
+    backText: {
         color: '#888',
         fontSize: 14,
         textDecorationLine: 'underline',
     },
 });
 
-export default Login;
+export default ResetPassword;

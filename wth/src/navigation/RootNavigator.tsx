@@ -11,6 +11,8 @@ import Login from '../Screens/Login';
 import Signup from '../Screens/Signup';
 import Profile from '../Screens/Profile';
 import Services from '../Screens/Services';
+import ForgotPassword from '../Screens/ForgotPassword';
+import ResetPassword from '../Screens/ResetPassword';
 
 export default function RootNavigator() {
   const [stack, setStack] = useState<Route[]>([{ name: 'Splash' }]);
@@ -61,6 +63,12 @@ export default function RootNavigator() {
       break;
     case 'Services':
       Screen = <Services routeParams={top.params} />;
+      break;
+    case 'ForgotPassword':
+      Screen = <ForgotPassword />;
+      break;
+    case 'ResetPassword':
+      Screen = <ResetPassword />;
       break;
     default:
       Screen = <Home />;
