@@ -3,11 +3,21 @@ const nodemailer = require('nodemailer');
 // Create transporter with Gmail
 const createTransporter = () => {
     return nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // true for 465, false for other ports
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD
-        }
+        },
+        tls: {
+            rejectUnauthorized: false // Helps with some self-signed cert issues or proxy setups
+        },
+        logger: true, // Log to console
+        debug: true,  // Include SMTP traffic in logs
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 5000,
+        socketTimeout: 10000
     });
 };
 
