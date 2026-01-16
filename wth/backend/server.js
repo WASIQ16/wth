@@ -48,7 +48,7 @@ app.use('/api/auth', authRoutes);
 app.use((err, req, res, next) => {
     console.error('💥 Backend Error:', err.stack);
 
-    // Don't send response if headers already sent
+    // Don't send response if headers already senttttt
     if (res.headersSent) {
         return next(err);
     }
