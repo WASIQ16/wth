@@ -26,7 +26,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-const { verifyConfig } = require('./config/emailService');
+const { verifyConfig } = require('./config/resendService');
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
