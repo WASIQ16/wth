@@ -26,9 +26,14 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+const { verifyConfig } = require('./config/emailService');
+
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ Connected to MongoDB Atlas'))
+    .then(() => {
+        console.log('✅ Connected to MongoDB Atlas');
+        verifyConfig(); // Check email connection on startup
+    })
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Routes

@@ -3,15 +3,10 @@ const nodemailer = require('nodemailer');
 // Create transporter with Gmail
 const createTransporter = () => {
     return nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false, // true for 465, false for other ports
+        service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD
-        },
-        tls: {
-            rejectUnauthorized: false // Helps with some self-signed cert issues or proxy setups
         }
     });
 };
@@ -132,6 +127,18 @@ const sendPasswordResetEmail = async (email, resetToken) => {
     }
 };
 
+// Verify connection configuration
+const verifyConfig = async () => {
+    const transporter = createTransporter();
+    try {
+        await transporter.verify();
+        console.log('✅ Email Service: Connection to Gmail is successful!');
+    } catch (error) {
+        console.error('❌ Email Service: Connection failed:', error);
+    }
+};
+
 module.exports = {
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    verifyConfig
 };
