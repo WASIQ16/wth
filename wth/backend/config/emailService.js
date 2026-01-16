@@ -17,7 +17,9 @@ const createTransporter = () => {
         debug: true,
         connectionTimeout: 10000,
         greetingTimeout: 5000,
-        socketTimeout: 10000
+        socketTimeout: 10000,
+        dnsTimeout: 5000,
+        family: 4 // Force IPv4
     });
 };
 
