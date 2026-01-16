@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // For Android Emulator: http://10.0.2.2:5000/api
 // For Physical Device: Use your machine's local IP
+// const BASE_URL = 'http://10.0.2.2:5000/api';
 const BASE_URL = 'https://wth-production.up.railway.app/api';
 
 const apiClient = axios.create({
