@@ -72,7 +72,11 @@ export const updateProfile = async (fullName: string): Promise<any> => {
 export const uploadProfileImage = async (formData: FormData): Promise<any> => {
     console.log('📡 Calling Upload Avatar API...');
     try {
-        const response = await apiClient.post('/auth/upload-avatar', formData);
+        const response = await apiClient.post('/auth/upload-avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        });
         console.log('✅ Upload Avatar Success:', response.data);
         return response.data;
     } catch (error: any) {
