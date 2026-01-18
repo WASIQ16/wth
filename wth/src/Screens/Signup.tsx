@@ -12,6 +12,7 @@ import {
     ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
 import { signupUser } from '../api/auth';
@@ -102,7 +103,11 @@ const Signup = () => {
                                 style={styles.eyeIcon}
                                 onPress={() => setIsPasswordVisible(!isPasswordVisible)}
                             >
-                                <Text>{isPasswordVisible ? '🙈' : '👁️'}</Text>
+                                <MaterialIcons
+                                    name={isPasswordVisible ? "visibility" : "visibility-off"}
+                                    size={24}
+                                    color={isDarkMode ? "#FFF" : "#666"}
+                                />
                             </TouchableOpacity>
                         </View>
 

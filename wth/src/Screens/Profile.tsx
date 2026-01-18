@@ -15,6 +15,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -337,7 +338,11 @@ const Profile = () => {
                                     style={styles.eyeIcon}
                                     onPress={() => setIsCurrentPasswordVisible(!isCurrentPasswordVisible)}
                                 >
-                                    <Text>{isCurrentPasswordVisible ? '🙈' : '👁️'}</Text>
+                                    <MaterialIcons
+                                        name={isCurrentPasswordVisible ? "visibility" : "visibility-off"}
+                                        size={24}
+                                        color={isDarkMode ? "#FFF" : "#666"}
+                                    />
                                 </TouchableOpacity>
                             </View>
 
@@ -354,7 +359,11 @@ const Profile = () => {
                                     style={styles.eyeIcon}
                                     onPress={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
                                 >
-                                    <Text>{isNewPasswordVisible ? '🙈' : '👁️'}</Text>
+                                    <MaterialIcons
+                                        name={isNewPasswordVisible ? "visibility" : "visibility-off"}
+                                        size={24}
+                                        color={isDarkMode ? "#FFF" : "#666"}
+                                    />
                                 </TouchableOpacity>
                             </View>
 
@@ -371,7 +380,11 @@ const Profile = () => {
                                     style={styles.eyeIcon}
                                     onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
                                 >
-                                    <Text>{isConfirmPasswordVisible ? '🙈' : '👁️'}</Text>
+                                    <MaterialIcons
+                                        name={isConfirmPasswordVisible ? "visibility" : "visibility-off"}
+                                        size={24}
+                                        color={isDarkMode ? "#FFF" : "#666"}
+                                    />
                                 </TouchableOpacity>
                             </View>
 
