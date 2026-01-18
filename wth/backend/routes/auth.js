@@ -256,7 +256,7 @@ router.post('/forgot-password', [
         }
 
         // Generate reset token
-        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetToken = crypto.randomInt(100000, 1000000).toString();
 
         // Hash token before saving to database
         const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
