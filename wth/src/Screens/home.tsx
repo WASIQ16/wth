@@ -13,6 +13,7 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {
   startListening,
   stopListening,
@@ -159,10 +160,10 @@ const Home: React.FC<Props> = () => {
   };
 
   const menuItems = [
-    { id: 'history', name: 'History', icon: '📜' },
-    { id: 'rate', name: 'Rate Us', icon: '⭐' },
-    { id: 'share', name: 'Share App', icon: '📤' },
-    { id: 'logout', name: 'Logout', icon: '🚪', action: handleLogout },
+    { id: 'history', name: 'History', icon: 'history' },
+    { id: 'rate', name: 'Rate Us', icon: 'star-rate' },
+    { id: 'share', name: 'Share App', icon: 'share' },
+    { id: 'logout', name: 'Logout', icon: 'logout', action: handleLogout },
   ];
 
   return (
@@ -172,7 +173,7 @@ const Home: React.FC<Props> = () => {
         {/* Header Section */}
         <View style={styles.header}>
           <TouchableOpacity onPress={toggleSidebar} style={styles.menuButton}>
-            <Text style={[styles.menuIcon, isDarkMode && styles.darkText]}>☰</Text>
+            <MaterialIcons name="menu" size={28} color={isDarkMode ? "#FFF" : "#333"} />
           </TouchableOpacity>
           {/* Avatar - navigates to Profile */}
           <TouchableOpacity onPress={() => navigate('Profile')}>
@@ -279,7 +280,12 @@ const Home: React.FC<Props> = () => {
                   style={styles.sidebarMenuItem}
                   onPress={() => item.action ? item.action() : (toggleSidebar(), Alert.alert(item.name, `Opening ${item.name}...`))}
                 >
-                  <Text style={styles.sidebarMenuIcon}>{item.icon}</Text>
+                  <MaterialIcons
+                    name={item.icon}
+                    size={24}
+                    color={item.id === 'logout' ? "#FF5252" : (isDarkMode ? "#FFF" : "#333")}
+                    style={{ marginRight: 15, width: 30, textAlign: 'center' }}
+                  />
                   <Text style={[
                     styles.sidebarMenuText,
                     isDarkMode && styles.darkText,
