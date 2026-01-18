@@ -43,7 +43,7 @@ const Home: React.FC<Props> = () => {
   const [problemText, setProblemText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [userData, setUserData] = useState<{ fullName: string; email: string } | null>(null);
+  const [userData, setUserData] = useState<{ fullName: string; email: string; profileImage?: string } | null>(null);
 
   useEffect(() => {
     fetchUserData();
@@ -177,7 +177,10 @@ const Home: React.FC<Props> = () => {
           {/* Avatar - navigates to Profile */}
           <TouchableOpacity onPress={() => navigate('Profile')}>
             <View style={styles.avatarPlaceholder} >
-              <Image source={require('../assets/pic.jpg')} style={{ width: 45, height: 45, borderRadius: 22.5 }} />
+              <Image
+                source={userData?.profileImage ? { uri: userData.profileImage } : require('../assets/pic.jpg')}
+                style={{ width: 45, height: 45, borderRadius: 22.5 }}
+              />
             </View>
           </TouchableOpacity>
         </View>
@@ -256,7 +259,10 @@ const Home: React.FC<Props> = () => {
           ]}>
             <View style={styles.sidebarHeader}>
               <View style={styles.sidebarProfileWrapper}>
-                <Image source={require('../assets/pic.jpg')} style={styles.sidebarProfileImage} />
+                <Image
+                  source={userData?.profileImage ? { uri: userData.profileImage } : require('../assets/pic.jpg')}
+                  style={styles.sidebarProfileImage}
+                />
               </View>
               <Text style={[styles.sidebarName, isDarkMode && styles.darkText]}>
                 {userData?.fullName || 'User'}
