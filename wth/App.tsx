@@ -1,12 +1,40 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import { StatusBar, StyleSheet, useColorScheme, View, PermissionsAndroid, Platform, Alert } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import RootNavigator from './src/navigation/RootNavigator';
 
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
 function App() {
+  useEffect(() => {
+    const requestMicrophonePermission = async () => {
+      if (Platform.OS === 'android') {
+        try {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+            {
+              title: 'Microphone Permission',
+              message: 'WTH Services needs access to your microphone to provide voice-to-text features.',
+              buttonNeutral: 'Ask Me Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'OK',
+            }
+          );
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            console.log('Microphone permission granted');
+          } else {
+            console.log('Microphone permission denied');
+          }
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+    };
+
+    requestMicrophonePermission();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>
