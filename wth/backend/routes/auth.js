@@ -6,7 +6,7 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const upload = require('../config/cloudinaryConfig');
 const { check, validationResult } = require('express-validator');
-const { sendPasswordResetEmail } = require('../config/resendService');
+const { sendPasswordResetEmail } = require('../config/sendGridService');
 
 // @route   POST api/auth/signup
 // @desc    Register user
