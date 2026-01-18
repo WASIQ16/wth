@@ -7,8 +7,10 @@ import {
     TouchableOpacity,
     TextInput,
     Alert,
+    StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {
     startListening,
     stopListening,
@@ -20,13 +22,13 @@ import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
 
 const SERVICES = [
-    { name: 'Painting', icon: '🎨' },
-    { name: 'AC Service', icon: '❄️' },
-    { name: 'Plumbing', icon: '🔧' },
-    { name: 'Electrician', icon: '⚡' },
-    { name: 'Cleaning', icon: '🧹' },
-    { name: 'Carpentry', icon: '🪚' },
-    { name: 'Others', icon: '⋯' },
+    { name: 'Painting', icon: 'format-paint' },
+    { name: 'AC Service', icon: 'ac-unit' },
+    { name: 'Plumbing', icon: 'plumbing' },
+    { name: 'Electrician', icon: 'electrical-services' },
+    { name: 'Cleaning', icon: 'cleaning-services' },
+    { name: 'Carpentry', icon: 'carpenter' },
+    { name: 'Others', icon: 'more-horiz' },
 ];
 
 const Services = ({ routeParams }: { routeParams?: any }) => {
@@ -34,7 +36,7 @@ const Services = ({ routeParams }: { routeParams?: any }) => {
     const { isDarkMode } = useTheme();
     const [problemText, setProblemText] = useState('');
     const [isListening, setIsListening] = useState(false);
-    const [selectedService, setSelectedService] = useState({ name: 'Select a Service', icon: '' });
+    const [selectedService, setSelectedService] = useState({ name: 'Select a Service', icon: 'help-outline' });
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     useEffect(() => {
@@ -58,9 +60,6 @@ const Services = ({ routeParams }: { routeParams?: any }) => {
         const resultsSubscription = addEventListener('onSpeechResults', (e: any) => {
             if (e.value) setProblemText(e.value);
         });
-        const partialResultsSubscription = addEventListener('onSpeechPartialResults', (e: any) => {
-            if (e.value) setProblemText(e.value);
-        });
 
         return () => {
             destroy().then(() => {
@@ -68,7 +67,6 @@ const Services = ({ routeParams }: { routeParams?: any }) => {
                 endSubscription.remove();
                 errorSubscription.remove();
                 resultsSubscription.remove();
-                partialResultsSubscription.remove();
             });
         };
     }, []);
@@ -77,6 +75,7 @@ const Services = ({ routeParams }: { routeParams?: any }) => {
         try {
             if (isListening) {
                 await stopListening();
+                setIsListening(false);
             } else {
                 setProblemText('');
                 await setRecognitionLanguage('en-US');
@@ -94,71 +93,92 @@ const Services = ({ routeParams }: { routeParams?: any }) => {
 
     return (
         <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]}>
-            <View style={[styles.header, isDarkMode && styles.darkHeader]}>
-                <TouchableOpacity onPress={goBack} style={styles.backButton}>
-                    <Text style={[styles.backText, isDarkMode && styles.darkText]}>←</Text>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isDarkMode ? '#0F172A' : '#F8FAFC'} />
+
+            <View style={styles.header}>
+                <TouchableOpacity onPress={goBack} style={[styles.headerBtn, isDarkMode && styles.darkHeaderBtn]}>
+                    <MaterialIcons name="arrow-back" size={22} color={isDarkMode ? "#F8FAFC" : "#1E293B"} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>Services</Text>
+                <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>Request Service</Text>
+                <View style={{ width: 44 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
-                {/* Identical Input Section as Home */}
-                <View style={styles.inputSection}>
-                    <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>Describe the problem</Text>
-                    <View style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+                {/* Input Section - Same as Home */}
+                <View style={[styles.inputCard, isDarkMode && styles.darkCard]}>
+                    <Text style={[styles.cardTitle, isDarkMode && styles.darkText]}>Describe the issue</Text>
+                    <View style={[styles.inputWrapper, isDarkMode && styles.darkInputWrapper]}>
                         <TextInput
-                            style={[styles.textInput, isDarkMode && styles.darkTextInput]}
-                            placeholder={isListening ? "Listening..." : "Type the problem..."}
-                            placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                            style={[styles.textInput, isDarkMode && styles.darkText]}
+                            placeholder={isListening ? "Listening..." : "Tell us what's wrong..."}
+                            placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
                             multiline
                             value={problemText}
                             onChangeText={setProblemText}
                         />
                         <TouchableOpacity
-                            style={[styles.micButton, isListening && styles.micButtonActive, isDarkMode && styles.darkMicButton]}
+                            style={[styles.micBtn, isListening && styles.micBtnActive]}
                             onPress={toggleListening}
                         >
-                            <Text style={styles.micIcon}>{isListening ? '🛑' : '🎤'}</Text>
+                            <MaterialIcons name={isListening ? "stop" : "mic"} size={22} color="#FFF" />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Dropdown Section */}
-                <View style={styles.dropdownSection}>
-                    <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>Select Service</Text>
+                <View style={styles.dropdownContainer}>
+                    <Text style={[styles.sectionLabel, isDarkMode && styles.darkLabel]}>Required Service</Text>
                     <TouchableOpacity
-                        style={[styles.dropdownHeader, isDarkMode && styles.darkInputContainer]}
+                        style={[styles.dropdownHeader, isDarkMode && styles.darkCard]}
                         onPress={() => setIsDropdownOpen(!isDropdownOpen)}
                     >
                         <View style={styles.dropdownHeaderContent}>
-                            {selectedService.icon ? <Text style={styles.serviceIcon}>{selectedService.icon} </Text> : null}
-                            <Text style={[styles.dropdownHeaderText, isDarkMode && styles.darkText]}>{selectedService.name}</Text>
+                            <View style={[styles.selectedIconBox, isDarkMode && styles.darkIconBox]}>
+                                <MaterialIcons name={selectedService.icon} size={20} color="#2E8B57" />
+                            </View>
+                            <Text style={[styles.dropdownHeaderText, isDarkMode && styles.darkText]}>
+                                {selectedService.name}
+                            </Text>
                         </View>
-                        <Text style={[styles.arrowIcon, isDarkMode && styles.darkText]}>{isDropdownOpen ? '▲' : '▼'}</Text>
+                        <MaterialIcons
+                            name={isDropdownOpen ? "expand-less" : "expand-more"}
+                            size={24}
+                            color={isDarkMode ? "#94A3B8" : "#64748B"}
+                        />
                     </TouchableOpacity>
 
                     {isDropdownOpen && (
-                        <View style={[styles.dropdownList, isDarkMode && styles.darkDropdownList]}>
+                        <View style={[styles.dropdownList, isDarkMode && styles.darkCard]}>
                             {SERVICES.map((service) => (
                                 <TouchableOpacity
                                     key={service.name}
                                     style={styles.dropdownItem}
                                     onPress={() => handleSelectService(service)}
                                 >
-                                    <View style={styles.dropdownItemContent}>
-                                        <Text style={styles.serviceIcon}>{service.icon}</Text>
-                                        <Text style={[styles.dropdownItemText, isDarkMode && styles.darkText]}> {service.name}</Text>
+                                    <View style={[styles.itemIconBox, isDarkMode && styles.darkIconBox]}>
+                                        <MaterialIcons name={service.icon} size={18} color="#2E8B57" />
                                     </View>
+                                    <Text style={[styles.dropdownItemText, isDarkMode && styles.darkText]}>
+                                        {service.name}
+                                    </Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
                     )}
                 </View>
 
-                <TouchableOpacity style={styles.submitButton}
-                    onPress={() => Alert.alert('Model Training', 'Ask Ahmad to Train Model')}>
-                    <Text style={styles.submitButtonText}>Request Service</Text>
+                <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={() => Alert.alert('Request Sent', 'Our service providers will contact you soon.')}
+                >
+                    <Text style={styles.submitButtonText}>Confirm Request</Text>
+                    <MaterialIcons name="check-circle" size={20} color="#FFF" style={{ marginLeft: 8 }} />
                 </TouchableOpacity>
+
+                <Text style={styles.disclaimerText}>
+                    Our AI will analyze your description to match you with the best provider.
+                </Text>
             </ScrollView>
         </SafeAreaView>
     );
@@ -167,155 +187,151 @@ const Services = ({ routeParams }: { routeParams?: any }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F7FA',
+        backgroundColor: '#F8FAFC',
     },
     darkContainer: {
-        backgroundColor: '#000000',
+        backgroundColor: '#0F172A',
     },
     header: {
         flexDirection: 'row',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
         alignItems: 'center',
-        padding: 20,
+        justifyContent: 'space-between',
+    },
+    headerBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
         backgroundColor: '#FFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
     },
-    darkHeader: {
-        backgroundColor: '#0A0A0A',
-        borderBottomColor: '#1F1F1F',
-    },
-    backButton: {
-        marginRight: 15,
-    },
-    backText: {
-        fontSize: 24,
-        color: '#68BA7F',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#253D2C',
-    },
-    content: {
+    darkHeaderBtn: { backgroundColor: '#1E293B' },
+    headerTitle: { fontSize: 18, fontWeight: '800', color: '#1E293B' },
+    darkText: { color: '#F8FAFC' },
+    scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 40 },
+    inputCard: {
+        backgroundColor: '#FFF',
+        borderRadius: 24,
         padding: 20,
+        marginBottom: 24,
+        shadowColor: '#2E8B57',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.08,
+        shadowRadius: 20,
+        elevation: 8,
     },
-    inputSection: {
-        marginBottom: 30,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 15,
-        color: '#2C3E50',
-    },
-    inputContainer: {
+    darkCard: { backgroundColor: '#1E293B' },
+    cardTitle: { fontSize: 16, fontWeight: '700', color: '#334155', marginBottom: 16 },
+    inputWrapper: {
         flexDirection: 'row',
-        backgroundColor: '#FFF',
-        borderRadius: 15,
-        padding: 10,
-        height: 120,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 16,
+        padding: 12,
+        minHeight: 100,
+    },
+    darkInputWrapper: { backgroundColor: '#0F172A' },
+    textInput: { flex: 1, fontSize: 15, color: '#1E293B', textAlignVertical: 'top' },
+    micBtn: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#2E8B57',
+        borderRadius: 20,
+        justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
+        alignSelf: 'flex-end',
     },
-    darkInputContainer: {
-        backgroundColor: '#0A0A0A',
-        borderColor: '#1F1F1F',
+    micBtnActive: { backgroundColor: '#EF4444' },
+    dropdownContainer: { marginBottom: 32 },
+    sectionLabel: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        marginBottom: 12,
+        letterSpacing: 1,
+        marginLeft: 4
     },
-    textInput: {
-        flex: 1,
-        fontSize: 16,
-        color: '#333',
-        textAlignVertical: 'top',
-        height: '100%',
-    },
-    darkTextInput: {
-        color: '#FFFFFF',
-    },
-    micButton: {
-        padding: 10,
-        backgroundColor: '#68BA7F22',
-        borderRadius: 50,
-        marginLeft: 10,
-    },
-    darkMicButton: {
-        backgroundColor: '#1A1A1A',
-    },
-    micButtonActive: {
-        backgroundColor: '#FFEBEE',
-        borderColor: '#FF5252',
-        borderWidth: 1,
-    },
-    micIcon: {
-        fontSize: 20,
-    },
-    dropdownSection: {
-        marginBottom: 30,
-    },
+    darkLabel: { color: '#64748B' },
     dropdownHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: '#FFF',
-        borderRadius: 12,
-        padding: 15,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
+        borderRadius: 20,
+        padding: 16,
+        elevation: 2,
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 15,
     },
-    dropdownHeaderText: {
-        fontSize: 16,
-        color: '#68BA7F',
-        fontWeight: '500',
-    },
-    dropdownHeaderContent: {
-        flexDirection: 'row',
+    dropdownHeaderContent: { flexDirection: 'row', alignItems: 'center' },
+    selectedIconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: '#F0FDF4',
+        justifyContent: 'center',
         alignItems: 'center',
+        marginRight: 12,
     },
-    serviceIcon: {
-        fontSize: 20,
-    },
-    arrowIcon: {
-        fontSize: 12,
-        color: '#666',
-    },
+    darkIconBox: { backgroundColor: '#0F172A' },
+    dropdownHeaderText: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
     dropdownList: {
         backgroundColor: '#FFF',
-        borderRadius: 12,
-        marginTop: 5,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-        overflow: 'hidden',
-    },
-    darkDropdownList: {
-        backgroundColor: '#0A0A0A',
-        borderColor: '#1F1F1F',
+        borderRadius: 20,
+        marginTop: 8,
+        padding: 8,
+        elevation: 4,
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
     },
     dropdownItem: {
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F9F9F9',
-    },
-    dropdownItemContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        padding: 12,
+        borderRadius: 14,
     },
-    dropdownItemText: {
-        fontSize: 16,
-        color: '#333',
-    },
-    submitButton: {
-        backgroundColor: '#253D2C',
-        paddingVertical: 16,
-        borderRadius: 12,
+    itemIconBox: {
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        backgroundColor: '#F0FDF4',
+        justifyContent: 'center',
         alignItems: 'center',
+        marginRight: 12,
     },
-    submitButtonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: 'bold',
+    dropdownItemText: { fontSize: 15, fontWeight: '600', color: '#334155' },
+    submitButton: {
+        backgroundColor: '#2E8B57',
+        flexDirection: 'row',
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#2E8B57',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 8,
     },
-    darkText: {
-        color: '#FFFFFF',
+    submitButtonText: { color: '#FFF', fontSize: 17, fontWeight: '800' },
+    disclaimerText: {
+        textAlign: 'center',
+        color: '#94A3B8',
+        fontSize: 12,
+        marginTop: 20,
+        lineHeight: 18,
+        paddingHorizontal: 20,
     },
 });
 

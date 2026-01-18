@@ -103,6 +103,39 @@ const Home: React.FC<Props> = () => {
     }
   };
 
+  const slideAnim = React.useRef(new Animated.Value(-Dimensions.get('window').width * 0.8)).current;
+  const opacityAnim = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isSidebarVisible) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: -Dimensions.get('window').width * 0.8,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isSidebarVisible]);
+
   const toggleSidebar = () => setIsSidebarVisible(!isSidebarVisible);
 
   const handleLogout = async () => {
@@ -119,8 +152,11 @@ const Home: React.FC<Props> = () => {
   };
 
   const menuItems = [
-    { id: 'history', name: 'History', icon: 'history' },
-    { id: 'rate', name: 'Rate Us', icon: 'star-rate' },
+    { id: 'profile', name: 'My Profile', icon: 'person-outline', action: () => { toggleSidebar(); navigate('Profile'); } },
+    { id: 'history', name: 'Service History', icon: 'history' },
+    { id: 'settings', name: 'Settings', icon: 'settings' },
+    { id: 'help', name: 'Help & Support', icon: 'help-outline' },
+    { id: 'rate', name: 'Rate Us', icon: 'star-outline' },
     { id: 'share', name: 'Share App', icon: 'share' },
     { id: 'logout', name: 'Logout', icon: 'logout', action: handleLogout },
   ];
@@ -204,11 +240,26 @@ const Home: React.FC<Props> = () => {
       </ScrollView>
 
       {/* Sidebar Modal */}
-      <Modal visible={isSidebarVisible} transparent animationType="fade" onRequestClose={toggleSidebar}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={toggleSidebar}>
-          <Animated.View style={[styles.sidebar, isDarkMode && styles.darkSidebar]}>
+      <Modal visible={isSidebarVisible} transparent animationType="none" onRequestClose={toggleSidebar}>
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.modalOverlayBg, { opacity: opacityAnim }]}>
+            <TouchableOpacity
+              style={styles.modalCloseArea}
+              activeOpacity={1}
+              onPress={toggleSidebar}
+            />
+          </Animated.View>
+
+          <Animated.View style={[
+            styles.sidebar,
+            isDarkMode && styles.darkSidebar,
+            { transform: [{ translateX: slideAnim }] }
+          ]}>
             <View style={styles.sidebarHeader}>
-              <View style={styles.sidebarProfileBorder}>
+              <TouchableOpacity style={styles.sidebarCloseBtn} onPress={toggleSidebar}>
+                <MaterialIcons name="close" size={24} color={isDarkMode ? "#94A3B8" : "#64748B"} />
+              </TouchableOpacity>
+              <View style={[styles.sidebarProfileBorder, isDarkMode && styles.darkProfileBorder]}>
                 <Image
                   source={userData?.profileImage ? { uri: userData.profileImage } : require('../assets/pic.jpg')}
                   style={styles.sidebarAvatar}
@@ -218,36 +269,38 @@ const Home: React.FC<Props> = () => {
               <Text style={styles.sidebarEmail}>{userData?.email || '...'}</Text>
             </View>
 
-            <View style={styles.sidebarMenu}>
+            <ScrollView style={styles.sidebarMenu} showsVerticalScrollIndicator={false}>
               {menuItems.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={styles.menuItem}
+                  style={[styles.menuItem, isDarkMode && styles.darkMenuItem]}
                   onPress={() => item.action ? item.action() : (toggleSidebar(), Alert.alert(item.name, `Opening ${item.name}...`))}
                 >
                   <View style={[styles.menuIconBox, isDarkMode && styles.darkMenuIconBox]}>
                     <MaterialIcons
                       name={item.icon}
-                      size={20}
-                      color={item.id === 'logout' ? "#FF4B4B" : "#2E8B57"}
+                      size={22}
+                      color={item.id === 'logout' ? "#EF4444" : "#2E8B57"}
                     />
                   </View>
                   <Text style={[
                     styles.menuText,
                     isDarkMode && styles.darkText,
-                    item.id === 'logout' && { color: '#FF4B4B', fontWeight: '700' }
+                    item.id === 'logout' && { color: '#EF4444' }
                   ]}>
                     {item.name}
                   </Text>
+                  <MaterialIcons name="chevron-right" size={20} color={isDarkMode ? "#334155" : "#E2E8F0"} style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
 
             <View style={styles.sidebarFooter}>
               <Text style={styles.versionLabel}>WTH Services v1.0.0</Text>
+              <Text style={styles.footerBranding}>Made with ❤️ for You</Text>
             </View>
           </Animated.View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -429,43 +482,74 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    flexDirection: 'row',
+  },
+  modalOverlayBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+  },
+  modalCloseArea: {
+    flex: 1,
   },
   sidebar: {
-    width: '75%',
-    height: '100%',
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '80%',
     backgroundColor: '#FFF',
-    padding: 24,
-    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 10, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOpacity: 0.2,
+    shadowRadius: 30,
+    elevation: 20,
+    zIndex: 100,
   },
   darkSidebar: {
     backgroundColor: '#0F172A',
   },
+  sidebarCloseBtn: {
+    alignSelf: 'flex-end',
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   sidebarHeader: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   sidebarProfileBorder: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 3,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
     borderColor: '#F0FDF4',
-    padding: 4,
+    padding: 2,
     marginBottom: 16,
+    shadowColor: '#2E8B57',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+  },
+  darkProfileBorder: {
+    borderColor: '#1E293B',
+    shadowColor: '#000',
   },
   sidebarAvatar: {
     width: '100%',
     height: '100%',
-    borderRadius: 40,
+    borderRadius: 44,
   },
   sidebarName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
     color: '#1E293B',
     marginBottom: 4,
@@ -473,6 +557,7 @@ const styles = StyleSheet.create({
   sidebarEmail: {
     fontSize: 14,
     color: '#64748B',
+    fontWeight: '500',
   },
   sidebarMenu: {
     flex: 1,
@@ -480,14 +565,19 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginBottom: 8,
+  },
+  darkMenuItem: {
+    // Subtle hover effect or just spacing
   },
   menuIconBox: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F0FDF4',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -497,18 +587,27 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#334155',
   },
   sidebarFooter: {
     paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+    alignItems: 'center',
   },
   versionLabel: {
     fontSize: 12,
+    fontWeight: '600',
     color: '#94A3B8',
-    textAlign: 'center',
+    marginBottom: 4,
+  },
+  footerBranding: {
+    fontSize: 10,
+    color: '#CBD5E1',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });
 
