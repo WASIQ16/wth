@@ -11,6 +11,7 @@ import {
   Modal,
   Dimensions,
   Animated,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -19,7 +20,6 @@ import {
   stopListening,
   destroy,
   addEventListener,
-  removeAllListeners,
   setRecognitionLanguage,
 } from '@ascendtis/react-native-voice-to-text';
 import { useAppNavigation } from '../navigation/NavigationContext';
@@ -29,13 +29,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Props = {};
 
-// Mock Data for Categories with Emojis as icons
+// Categories with MaterialIcons for a professional look
 const CATEGORIES = [
-  { id: 1, name: 'Plumbing', icon: '🔧' },
-  { id: 2, name: 'Electrician', icon: '⚡' },
-  { id: 3, name: 'Painting', icon: '🎨' },
-  { id: 4, name: 'AC Service', icon: '❄️' },
-  { id: 5, name: 'Others', icon: '⋯' },
+  { id: 1, name: 'Plumbing', icon: 'plumbing' },
+  { id: 2, name: 'Electrician', icon: 'electrical-services' },
+  { id: 3, name: 'Painting', icon: 'format-paint' },
+  { id: 4, name: 'AC Service', icon: 'ac-unit' },
+  { id: 5, name: 'Others', icon: 'more-horiz' },
 ];
 
 const Home: React.FC<Props> = () => {
@@ -52,16 +52,12 @@ const Home: React.FC<Props> = () => {
 
   const fetchUserData = async () => {
     try {
-      // First try to get from storage for immediate display
       const stored = await AsyncStorage.getItem('user_data');
       if (stored) {
         setUserData(JSON.parse(stored));
       }
-
-      // Then fetch fresh data from API
       const data = await getProfile();
       setUserData(data);
-      // Update storage with fresh data
       await AsyncStorage.setItem('user_data', JSON.stringify(data));
     } catch (error) {
       console.error('Error fetching user data in Home:', error);
@@ -69,57 +65,27 @@ const Home: React.FC<Props> = () => {
   };
 
   useEffect(() => {
-    // Setting up Voice listeners
-    const startSubscription = addEventListener('onSpeechStart', onSpeechStart);
-    const endSubscription = addEventListener('onSpeechEnd', onSpeechEnd);
-    const errorSubscription = addEventListener('onSpeechError', onSpeechError);
-    const resultsSubscription = addEventListener('onSpeechResults', onSpeechResults);
-    const partialResultsSubscription = addEventListener('onSpeechPartialResults', onSpeechPartialResults);
+    const startSubscription = addEventListener('onSpeechStart', () => setIsListening(true));
+    const endSubscription = addEventListener('onSpeechEnd', () => setIsListening(false));
+    const errorSubscription = addEventListener('onSpeechError', (e: any) => {
+      setIsListening(false);
+      if (e.message !== 'No speech match found' && e.message !== 'Speech timeout') {
+        Alert.alert('Speech Recognition Error', e.message || 'Something went wrong');
+      }
+    });
+    const resultsSubscription = addEventListener('onSpeechResults', (e: any) => {
+      if (e.value) setProblemText(e.value);
+    });
 
     return () => {
-      // Removing listeners when component unmounts
       destroy().then(() => {
         startSubscription.remove();
         endSubscription.remove();
         errorSubscription.remove();
         resultsSubscription.remove();
-        partialResultsSubscription.remove();
       });
     };
   }, []);
-
-  const onSpeechStart = (e: any) => {
-    console.log('onSpeechStart: ', e);
-    setIsListening(true);
-  };
-
-  const onSpeechEnd = (e: any) => {
-    console.log('onSpeechEnd: ', e);
-    setIsListening(false);
-  };
-
-  const onSpeechError = (e: any) => {
-    console.log('onSpeechError: ', e);
-    setIsListening(false);
-    // Hide common non-critical errors or customize messages
-    if (e.message !== 'No speech match found' && e.message !== 'Speech timeout') {
-      Alert.alert('Speech Recognition Error', e.message || 'Something went wrong');
-    }
-  };
-
-  const onSpeechResults = (e: any) => {
-    console.log('onSpeechResults: ', e);
-    if (e.value) {
-      setProblemText(e.value);
-    }
-  };
-
-  const onSpeechPartialResults = (e: any) => {
-    console.log('onSpeechPartialResults: ', e);
-    if (e.value) {
-      setProblemText(e.value);
-    }
-  };
 
   const toggleListening = async () => {
     try {
@@ -127,7 +93,7 @@ const Home: React.FC<Props> = () => {
         await stopListening();
         setIsListening(false);
       } else {
-        setProblemText(''); // Clear existing text when starting new recording
+        setProblemText('');
         await setRecognitionLanguage('en-US');
         await startListening();
       }
@@ -137,26 +103,19 @@ const Home: React.FC<Props> = () => {
     }
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarVisible(!isSidebarVisible);
-  };
+  const toggleSidebar = () => setIsSidebarVisible(!isSidebarVisible);
 
   const handleLogout = async () => {
     setIsSidebarVisible(false);
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          onPress: async () => {
-            await AsyncStorage.clear();
-            replace('Login');
-          }
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout", onPress: async () => {
+          await AsyncStorage.clear();
+          replace('Login');
         }
-      ]
-    );
+      }
+    ]);
   };
 
   const menuItems = [
@@ -168,128 +127,115 @@ const Home: React.FC<Props> = () => {
 
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isDarkMode ? '#0F172A' : '#F8FAFC'} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Header Section */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={toggleSidebar} style={styles.menuButton}>
-            <MaterialIcons name="menu" size={28} color={isDarkMode ? "#FFF" : "#333"} />
+          <TouchableOpacity onPress={toggleSidebar} style={[styles.headerBtn, isDarkMode && styles.darkHeaderBtn]}>
+            <MaterialIcons name="menu" size={24} color={isDarkMode ? "#F8FAFC" : "#1E293B"} />
           </TouchableOpacity>
-          {/* Avatar - navigates to Profile */}
           <TouchableOpacity onPress={() => navigate('Profile')}>
-            <View style={styles.avatarPlaceholder} >
-              <Image
-                source={userData?.profileImage ? { uri: userData.profileImage } : require('../assets/pic.jpg')}
-                style={{ width: 45, height: 45, borderRadius: 22.5 }}
-              />
-            </View>
+            <Image
+              source={userData?.profileImage ? { uri: userData.profileImage } : require('../assets/pic.jpg')}
+              style={styles.avatar}
+            />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.headerInfo}>
-          <Text style={[styles.greetingText, isDarkMode && styles.darkSubText]}>Hello,</Text>
-          <Text style={[styles.userName, isDarkMode && styles.darkText]}>
-            {userData?.fullName || 'User'}
+        <View style={styles.greetingContainer}>
+          <Text style={[styles.greetingSub, isDarkMode && styles.darkSubText]}>Good Day,</Text>
+          <Text style={[styles.greetingMain, isDarkMode && styles.darkText]}>
+            {userData?.fullName?.split(' ')[0] || 'User'} 👋
           </Text>
         </View>
 
-        {/* Primary Input Section */}
-        <View style={styles.inputSection}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkSectionTitle]}>What's the problem?</Text>
-          <View style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}>
+        {/* Input Card */}
+        <View style={[styles.inputCard, isDarkMode && styles.darkCard]}>
+          <Text style={[styles.cardTitle, isDarkMode && styles.darkText]}>Describe Your Issue</Text>
+          <View style={[styles.inputWrapper, isDarkMode && styles.darkInputWrapper]}>
             <TextInput
-              style={[styles.textInput, isDarkMode && styles.darkTextInput]}
-              placeholder={isListening ? "Listening..." : "Type the problem..."}
-              placeholderTextColor={isDarkMode ? "#666" : "#999"}
+              style={[styles.textInput, isDarkMode && styles.darkText]}
+              placeholder={isListening ? "Listening..." : "Tell us what's wrong..."}
+              placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
               multiline
               value={problemText}
               onChangeText={setProblemText}
             />
             <TouchableOpacity
-              style={[styles.micButton, isListening && styles.micButtonActive, isDarkMode && styles.darkMicButton]}
+              style={[styles.micBtn, isListening && styles.micBtnActive]}
               onPress={toggleListening}
             >
-              <Text style={styles.micIcon}>{isListening ? '🛑' : '🎤'}</Text>
+              <MaterialIcons name={isListening ? "stop" : "mic"} size={22} color="#FFF" />
             </TouchableOpacity>
           </View>
-
           <TouchableOpacity
-            style={styles.submitButton}
-            onPress={() => Alert.alert('Model Training', 'Ask Ahmad to Train Model')}
+            style={styles.analyzeBtn}
+            onPress={() => Alert.alert('Processing', 'Analyzing your request...')}
           >
-            <Text style={styles.submitButtonText}>Analyze Issue</Text>
+            <Text style={styles.analyzeBtnText}>Analyze Issue</Text>
+            <MaterialIcons name="arrow-forward" size={18} color="#FFF" style={{ marginLeft: 8 }} />
           </TouchableOpacity>
         </View>
 
-        {/* Quick Access Categories */}
-        <View style={styles.categoriesSection}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkSectionTitle]}>Quick Services</Text>
-          <View style={styles.grid}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[styles.categoryCard, isDarkMode && styles.darkCategoryCard]}
-                onPress={() => navigate('Services', { serviceName: cat.name })}
-              >
-                <View style={[styles.iconContainer, isDarkMode && styles.darkIconContainer]}>
-                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                </View>
-                <Text style={[styles.categoryName, isDarkMode && styles.darkText]}>{cat.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        {/* Services Grid */}
+        <View style={styles.servicesHeader}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>Quick Services</Text>
+          <TouchableOpacity>
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.grid}>
+          {CATEGORIES.map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
+              style={[styles.categoryCard, isDarkMode && styles.darkCard]}
+              onPress={() => navigate('Services', { serviceName: cat.name })}
+            >
+              <View style={[styles.iconBox, isDarkMode && styles.darkIconBox]}>
+                <MaterialIcons name={cat.icon} size={28} color="#2E8B57" />
+              </View>
+              <Text style={[styles.categoryName, isDarkMode && styles.darkText]}>{cat.name}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
       </ScrollView>
 
       {/* Sidebar Modal */}
-      <Modal
-        visible={isSidebarVisible}
-        transparent
-        animationType="none"
-        onRequestClose={toggleSidebar}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={toggleSidebar}
-        >
-          <Animated.View style={[
-            styles.sidebarContainer,
-            isDarkMode && styles.darkSidebarContainer
-          ]}>
+      <Modal visible={isSidebarVisible} transparent animationType="fade" onRequestClose={toggleSidebar}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={toggleSidebar}>
+          <Animated.View style={[styles.sidebar, isDarkMode && styles.darkSidebar]}>
             <View style={styles.sidebarHeader}>
-              <View style={styles.sidebarProfileWrapper}>
+              <View style={styles.sidebarProfileBorder}>
                 <Image
                   source={userData?.profileImage ? { uri: userData.profileImage } : require('../assets/pic.jpg')}
-                  style={styles.sidebarProfileImage}
+                  style={styles.sidebarAvatar}
                 />
               </View>
-              <Text style={[styles.sidebarName, isDarkMode && styles.darkText]}>
-                {userData?.fullName || 'User'}
-              </Text>
+              <Text style={[styles.sidebarName, isDarkMode && styles.darkText]}>{userData?.fullName || 'User'}</Text>
               <Text style={styles.sidebarEmail}>{userData?.email || '...'}</Text>
             </View>
-
-            <View style={styles.sidebarDivider} />
 
             <View style={styles.sidebarMenu}>
               {menuItems.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={styles.sidebarMenuItem}
+                  style={styles.menuItem}
                   onPress={() => item.action ? item.action() : (toggleSidebar(), Alert.alert(item.name, `Opening ${item.name}...`))}
                 >
-                  <MaterialIcons
-                    name={item.icon}
-                    size={24}
-                    color={item.id === 'logout' ? "#FF5252" : (isDarkMode ? "#FFF" : "#333")}
-                    style={{ marginRight: 15, width: 30, textAlign: 'center' }}
-                  />
+                  <View style={[styles.menuIconBox, isDarkMode && styles.darkMenuIconBox]}>
+                    <MaterialIcons
+                      name={item.icon}
+                      size={20}
+                      color={item.id === 'logout' ? "#FF4B4B" : "#2E8B57"}
+                    />
+                  </View>
                   <Text style={[
-                    styles.sidebarMenuText,
+                    styles.menuText,
                     isDarkMode && styles.darkText,
-                    item.id === 'logout' && styles.logoutMenuText
+                    item.id === 'logout' && { color: '#FF4B4B', fontWeight: '700' }
                   ]}>
                     {item.name}
                   </Text>
@@ -298,7 +244,7 @@ const Home: React.FC<Props> = () => {
             </View>
 
             <View style={styles.sidebarFooter}>
-              <Text style={styles.versionText}>Version 1.0.0</Text>
+              <Text style={styles.versionLabel}>WTH Services v1.0.0</Text>
             </View>
           </Animated.View>
         </TouchableOpacity>
@@ -310,138 +256,141 @@ const Home: React.FC<Props> = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: '#F8FAFC',
   },
   darkContainer: {
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 10,
     paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 30,
-    marginTop: 10,
-  },
-  menuButton: {
-    padding: 10,
-    marginLeft: -10,
-    marginRight: 10,
-  },
-  menuIcon: {
-    fontSize: 24,
-    color: '#333',
-  },
-  headerInfo: {
-    flex: 1,
-    marginLeft: 6,
-  },
-  greetingText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  darkText: {
-    color: '#FFFFFF',
-  },
-  darkSubText: {
-    color: '#888',
-  },
-  avatarPlaceholder: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: '#333', // Placeholder color
-  },
-  inputSection: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 15,
-    color: '#2C3E50',
-    marginLeft: 6,
-  },
-  darkSectionTitle: {
-    color: '#E0E0E0',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderRadius: 15,
-    padding: 10,
-    height: 120,
     alignItems: 'center',
-    shadowColor: '#000',
+    marginBottom: 24,
+  },
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#64748B',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: 10,
     elevation: 2,
-    marginBottom: 20,
-    minHeight: 120,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
   },
-  darkInputContainer: {
-    backgroundColor: '#0A0A0A',
-    borderColor: '#1F1F1F',
+  darkHeaderBtn: {
+    backgroundColor: '#1E293B',
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  greetingContainer: {
+    marginBottom: 24,
+  },
+  greetingSub: {
+    fontSize: 16,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  greetingMain: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  darkText: {
+    color: '#F8FAFC',
+  },
+  darkSubText: {
+    color: '#94A3B8',
+  },
+  inputCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 32,
+    shadowColor: '#2E8B57',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  darkCard: {
+    backgroundColor: '#1E293B',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 16,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 16,
+    padding: 12,
+    minHeight: 100,
+  },
+  darkInputWrapper: {
+    backgroundColor: '#0F172A',
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#333',
+    fontSize: 15,
+    color: '#1E293B',
     textAlignVertical: 'top',
-    height: '100%',
   },
-  darkTextInput: {
-    color: '#FFFFFF',
-  },
-  micButton: {
-    padding: 10,
-    backgroundColor: '#68BA7F22', // Light secondary tint
-    borderRadius: 50,
-    marginLeft: 10,
-  },
-  darkMicButton: {
-    backgroundColor: '#1A1A1A',
-  },
-  micButtonActive: {
-    backgroundColor: '#FFEBEE',
-    borderColor: '#FF5252',
-    borderWidth: 1,
-  },
-  micIcon: {
-    fontSize: 20,
-  },
-  submitButton: {
-    backgroundColor: '#253D2C',
-    paddingVertical: 16,
-    borderRadius: 12,
+  micBtn: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#2E8B57',
+    borderRadius: 20,
+    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#253D2C',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    alignSelf: 'flex-end',
   },
-  submitButtonText: {
+  micBtnActive: {
+    backgroundColor: '#EF4444',
+  },
+  analyzeBtn: {
+    backgroundColor: '#2E8B57',
+    flexDirection: 'row',
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  analyzeBtnText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+    fontWeight: '700',
   },
-  categoriesSection: {
-    flex: 1,
+  servicesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  viewAllText: {
+    color: '#2E8B57',
+    fontWeight: '700',
+    fontSize: 14,
   },
   grid: {
     flexDirection: 'row',
@@ -451,123 +400,114 @@ const styles = StyleSheet.create({
   categoryCard: {
     width: '48%',
     backgroundColor: '#FFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     alignItems: 'center',
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    marginBottom: 16,
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    shadowRadius: 10,
+    elevation: 3,
   },
-  darkCategoryCard: {
-    backgroundColor: '#0A0A0A',
-    borderColor: '#1F1F1F',
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#68BA7F22', // Light secondary tint
+  iconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#F0FDF4',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
-  darkIconContainer: {
-    backgroundColor: '#1A1A1A',
-  },
-  categoryIcon: {
-    fontSize: 28,
+  darkIconBox: {
+    backgroundColor: '#0F172A',
   },
   categoryName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: '700',
+    color: '#334155',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
   },
-  sidebarContainer: {
+  sidebar: {
     width: '75%',
     height: '100%',
     backgroundColor: '#FFF',
-    padding: 25,
+    padding: 24,
     paddingTop: 60,
+    shadowColor: '#000',
+    shadowOffset: { width: 10, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  darkSidebarContainer: {
-    backgroundColor: '#0A0A0A',
-    borderRightWidth: 1,
-    borderRightColor: '#1F1F1F',
+  darkSidebar: {
+    backgroundColor: '#0F172A',
   },
   sidebarHeader: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 40,
   },
-  sidebarProfileWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+  sidebarProfileBorder: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     borderWidth: 3,
-    borderColor: '#68BA7F',
-    padding: 3,
-    marginBottom: 15,
+    borderColor: '#F0FDF4',
+    padding: 4,
+    marginBottom: 16,
   },
-  sidebarProfileImage: {
+  sidebarAvatar: {
     width: '100%',
     height: '100%',
     borderRadius: 40,
   },
   sidebarName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 4,
   },
   sidebarEmail: {
-    fontSize: 12,
-    color: '#888',
-  },
-  sidebarDivider: {
-    height: 1,
-    backgroundColor: '#EEE',
-    marginBottom: 30,
+    fontSize: 14,
+    color: '#64748B',
   },
   sidebarMenu: {
     flex: 1,
   },
-  sidebarMenuItem: {
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    marginBottom: 5,
+    paddingVertical: 12,
+    marginBottom: 12,
   },
-  sidebarMenuIcon: {
-    fontSize: 22,
-    marginRight: 15,
-    width: 30,
-    textAlign: 'center',
+  menuIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  sidebarMenuText: {
+  darkMenuIconBox: {
+    backgroundColor: '#1E293B',
+  },
+  menuText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-  },
-  logoutMenuText: {
-    color: '#FF5252',
+    fontWeight: '600',
+    color: '#334155',
   },
   sidebarFooter: {
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#EEE',
+    borderTopColor: '#F1F5F9',
   },
-  versionText: {
+  versionLabel: {
     fontSize: 12,
-    color: '#BBB',
+    color: '#94A3B8',
     textAlign: 'center',
   },
 });

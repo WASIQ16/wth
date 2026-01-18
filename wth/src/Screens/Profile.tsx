@@ -13,6 +13,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ActivityIndicator,
+    StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -63,7 +64,6 @@ const Profile = () => {
         } catch (error: any) {
             setLoading(false);
             console.error('Error fetching profile:', error);
-            // Fallback to local storage if API fails
             const stored = await AsyncStorage.getItem('user_data');
             if (stored) {
                 const userData = JSON.parse(stored);
@@ -75,37 +75,26 @@ const Profile = () => {
     };
 
     const handleLogout = async () => {
-        Alert.alert(
-            "Logout",
-            "Are you sure you want to logout?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Logout",
-                    onPress: async () => {
-                        await AsyncStorage.clear();
-                        navigation.replace('Login');
-                    }
+        Alert.alert("Logout", "Are you sure you want to logout?", [
+            { text: "Cancel", style: "cancel" },
+            {
+                text: "Logout", onPress: async () => {
+                    await AsyncStorage.clear();
+                    navigation.replace('Login');
                 }
-            ]
-        );
+            }
+        ]);
     };
 
     const handleSelectImage = async () => {
-        const result = await launchImageLibrary({
-            mediaType: 'photo',
-            quality: 1,
-        });
-
-        if (result.didCancel) {
-            console.log('User cancelled image picker');
-        } else if (result.errorCode) {
-            console.log('ImagePicker Error: ', result.errorMessage);
+        const result = await launchImageLibrary({ mediaType: 'photo', quality: 1 });
+        if (result.didCancel) return;
+        if (result.errorCode) {
             Alert.alert('Error', result.errorMessage || 'Failed to pick image');
-        } else if (result.assets && result.assets.length > 0) {
+            return;
+        }
+        if (result.assets && result.assets.length > 0) {
             const asset = result.assets[0];
-
-            // Start uploading to Cloudinary via Backend
             setIsUploadingImage(true);
             try {
                 const formData = new FormData();
@@ -114,23 +103,11 @@ const Profile = () => {
                     type: asset.type || 'image/jpeg',
                     name: asset.fileName || 'profile.jpg',
                 } as any);
-
-                console.log('📤 Uploading image with details:', {
-                    uri: asset.uri,
-                    type: asset.type,
-                    fileName: asset.fileName,
-                    fileSize: asset.fileSize
-                });
-
                 const response = await uploadProfileImage(formData);
                 setProfileImage({ uri: response.profileImage });
-                Alert.alert('Success', 'Profile image updated successfully');
+                Alert.alert('Success', 'Profile image updated');
             } catch (error: any) {
-                console.error('Error uploading image:', error);
-
-                // Show detailed error message
-                const errorMsg = error.error || error.message || 'Failed to upload image';
-                Alert.alert('Error', errorMsg);
+                Alert.alert('Error', error.message || 'Failed to upload image');
             } finally {
                 setIsUploadingImage(false);
             }
@@ -142,39 +119,28 @@ const Profile = () => {
             Alert.alert('Error', 'Name cannot be empty');
             return;
         }
-
         if (tempName === fullName) {
             setIsEditingName(false);
             return;
         }
-
         setIsSavingName(true);
         try {
             await updateProfile(tempName);
             setFullName(tempName);
             setIsEditingName(false);
-
-            // Update local user data if stored
             const stored = await AsyncStorage.getItem('user_data');
             if (stored) {
                 const userData = JSON.parse(stored);
                 userData.fullName = tempName;
                 await AsyncStorage.setItem('user_data', JSON.stringify(userData));
             }
-
-            Alert.alert('Success', 'Profile name updated successfully');
+            Alert.alert('Success', 'Name updated');
         } catch (error: any) {
-            const message = error.message || 'Failed to update name';
-            Alert.alert('Error', message);
+            Alert.alert('Error', error.message || 'Failed to update name');
             setTempName(fullName);
         } finally {
             setIsSavingName(false);
         }
-    };
-
-    const handleCancelName = () => {
-        setTempName(fullName);
-        setIsEditingName(false);
     };
 
     const handleResetPassword = async () => {
@@ -190,18 +156,16 @@ const Profile = () => {
             Alert.alert('Error', 'Password must be at least 6 characters');
             return;
         }
-
         setIsResetting(true);
         try {
             await resetPassword(currentPassword, newPassword);
-            Alert.alert('Success', 'Password has been reset successfully');
+            Alert.alert('Success', 'Password has been updated');
             setIsPasswordModalVisible(false);
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (error: any) {
-            const message = error.message || 'Failed to reset password';
-            Alert.alert('Error', message);
+            Alert.alert('Error', error.message || 'Failed to update password');
         } finally {
             setIsResetting(false);
         }
@@ -209,491 +173,324 @@ const Profile = () => {
 
     return (
         <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]}>
-            <View style={[styles.header, isDarkMode && styles.darkHeader]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={[styles.backButtonText, isDarkMode && styles.darkBackText]}>← Back</Text>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isDarkMode ? '#0F172A' : '#F8FAFC'} />
+
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.headerBtn, isDarkMode && styles.darkHeaderBtn]}>
+                    <MaterialIcons name="arrow-back" size={22} color={isDarkMode ? "#F8FAFC" : "#1E293B"} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, isDarkMode && styles.darkTitle]}>Profile</Text>
-                <View style={{ width: 40 }} />
+                <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>Profile Settings</Text>
+                <View style={{ width: 44 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
                 {/* Profile Image Section */}
                 <View style={styles.imageSection}>
                     <View style={styles.imageWrapper}>
                         {isUploadingImage ? (
-                            <View style={[styles.profileImage, styles.imagePlaceholder, isDarkMode && styles.darkPlaceholder]}>
-                                <ActivityIndicator size="large" color="#68BA7F" />
+                            <View style={[styles.profileImage, styles.placeholderBox, isDarkMode && styles.darkCard]}>
+                                <ActivityIndicator size="large" color="#2E8B57" />
                             </View>
-                        ) : profileImage ? (
-                            <Image source={profileImage} style={styles.profileImage} />
                         ) : (
-                            <View style={[styles.profileImage, styles.imagePlaceholder, isDarkMode && styles.darkPlaceholder]}>
-                                <Text style={styles.placeholderText}>👤</Text>
-                            </View>
+                            <Image
+                                source={profileImage ? profileImage : require('../assets/pic.jpg')}
+                                style={styles.profileImage}
+                            />
                         )}
-                        <TouchableOpacity
-                            style={[styles.editButton, isDarkMode && styles.darkEditButton]}
-                            onPress={handleSelectImage}
-                            disabled={isUploadingImage}
-                        >
-                            <Text style={styles.editButtonText}>✎</Text>
+                        <TouchableOpacity style={styles.editImageBtn} onPress={handleSelectImage}>
+                            <MaterialIcons name="camera-alt" size={18} color="#FFF" />
                         </TouchableOpacity>
+                    </View>
+                    <Text style={[styles.userNameText, isDarkMode && styles.darkText]}>{fullName || 'User'}</Text>
+                    <Text style={styles.userEmailText}>{email || '...'}</Text>
+                </View>
+
+                {/* Account Section */}
+                <View style={[styles.sectionCard, isDarkMode && styles.darkCard]}>
+                    <Text style={[styles.sectionLabel, isDarkMode && styles.darkLabel]}>Account Details</Text>
+
+                    <View style={styles.infoRow}>
+                        <View style={styles.infoIconBox}>
+                            <MaterialIcons name="person" size={20} color="#2E8B57" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoTitle}>Full Name</Text>
+                            {isEditingName ? (
+                                <View style={styles.editingRow}>
+                                    <TextInput
+                                        style={[styles.nameInput, isDarkMode && styles.darkText]}
+                                        value={tempName}
+                                        onChangeText={setTempName}
+                                        autoFocus
+                                    />
+                                    <TouchableOpacity onPress={handleSaveName} style={styles.saveBtn}>
+                                        <MaterialIcons name="check" size={20} color="#2E8B57" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => setIsEditingName(false)}>
+                                        <MaterialIcons name="close" size={20} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <Text style={[styles.infoValue, isDarkMode && styles.darkText]}>{fullName}</Text>
+                            )}
+                        </View>
+                        {!isEditingName && (
+                            <TouchableOpacity onPress={() => setIsEditingName(true)}>
+                                <MaterialIcons name="edit" size={18} color="#94A3B8" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.infoRow}>
+                        <View style={styles.infoIconBox}>
+                            <MaterialIcons name="email" size={20} color="#2E8B57" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoTitle}>Email</Text>
+                            <Text style={[styles.infoValue, isDarkMode && styles.darkText]}>{email}</Text>
+                        </View>
                     </View>
                 </View>
 
-                {/* User Info Section */}
-                <View style={[styles.infoSection, isDarkMode && styles.darkInfoSection]}>
-                    <View style={[styles.infoItem, isDarkMode && styles.darkInfoItem]}>
-                        <View style={styles.labelRow}>
-                            <Text style={[styles.infoLabel, isDarkMode && styles.darkInfoLabel]}>Full Name</Text>
-                            {!isEditingName ? (
-                                <TouchableOpacity onPress={() => setIsEditingName(true)}>
-                                    <Text style={styles.editActionText}>Edit</Text>
-                                </TouchableOpacity>
-                            ) : (
-                                <View style={styles.editActions}>
-                                    <TouchableOpacity onPress={handleSaveName} style={styles.saveAction} disabled={isSavingName}>
-                                        {isSavingName ? (
-                                            <ActivityIndicator size="small" color="#68BA7F" />
-                                        ) : (
-                                            <Text style={styles.saveActionText}>Save</Text>
-                                        )}
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={handleCancelName}>
-                                        <Text style={styles.cancelActionText}>Cancel</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
-                        </View>
-                        {isEditingName ? (
-                            <TextInput
-                                style={[styles.nameInput, isDarkMode && styles.darkNameInput]}
-                                value={tempName}
-                                onChangeText={setTempName}
-                                autoFocus
-                            />
-                        ) : (
-                            <Text style={[styles.infoValue, isDarkMode && styles.darkInfoValue]}>{loading ? 'Loading...' : fullName}</Text>
-                        )}
-                    </View>
-                    <View style={[styles.infoItem, isDarkMode && styles.darkInfoItem]}>
-                        <Text style={[styles.infoLabel, isDarkMode && styles.darkInfoLabel]}>Email Address</Text>
-                        <Text style={[styles.infoValue, isDarkMode && styles.darkInfoValue]}>{loading ? 'Loading...' : email}</Text>
-                    </View>
+                {/* Preference Section */}
+                <View style={[styles.sectionCard, isDarkMode && styles.darkCard]}>
+                    <Text style={[styles.sectionLabel, isDarkMode && styles.darkLabel]}>Preferences</Text>
 
-                    {/* Dark Mode Toggle */}
-                    <View style={[styles.infoItem, isDarkMode && styles.darkInfoItem, styles.themeItem]}>
-                        <View>
-                            <Text style={[styles.infoLabel, isDarkMode && styles.darkInfoLabel]}>Appearance</Text>
-                            <Text style={[styles.infoValue, isDarkMode && styles.darkInfoValue]}>
-                                {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+                    <View style={styles.infoRow}>
+                        <View style={[styles.infoIconBox, { backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9' }]}>
+                            <MaterialIcons name={isDarkMode ? "dark-mode" : "light-mode"} size={20} color={isDarkMode ? "#FBBF24" : "#64748B"} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoTitle}>Dark Mode</Text>
+                            <Text style={[styles.infoValue, isDarkMode && styles.darkText]}>
+                                {isDarkMode ? 'Currently On' : 'Currently Off'}
                             </Text>
                         </View>
                         <Switch
                             value={isDarkMode}
                             onValueChange={toggleTheme}
-                            trackColor={{ false: "#767577", true: "#68BA7F" }}
-                            thumbColor={isDarkMode ? "#FFF" : "#f4f3f4"}
+                            trackColor={{ false: "#E2E8F0", true: "#2E8B57" }}
+                            thumbColor="#FFF"
                         />
                     </View>
 
-                    {/* Password Reset Trigger */}
-                    <TouchableOpacity
-                        style={[styles.infoItem, isDarkMode && styles.darkInfoItem, { borderBottomWidth: 0 }]}
-                        onPress={() => setIsPasswordModalVisible(true)}
-                    >
-                        <Text style={[styles.infoLabel, isDarkMode && styles.darkInfoLabel]}>Security</Text>
-                        <Text style={styles.resetPasswordText}>Reset Password</Text>
+                    <View style={styles.divider} />
+
+                    <TouchableOpacity style={styles.infoRow} onPress={() => setIsPasswordModalVisible(true)}>
+                        <View style={styles.infoIconBox}>
+                            <MaterialIcons name="lock" size={20} color="#2E8B57" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoTitle}>Password</Text>
+                            <Text style={[styles.infoValue, isDarkMode && styles.darkText]}>Change your password</Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={22} color="#94A3B8" />
                     </TouchableOpacity>
                 </View>
 
-                {/* Password Reset Modal */}
-                <Modal
-                    visible={isPasswordModalVisible}
-                    transparent
-                    animationType="slide"
-                    onRequestClose={() => setIsPasswordModalVisible(false)}
-                >
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === "ios" ? "padding" : "height"}
-                        style={styles.modalOverlay}
-                    >
-                        <View style={[styles.modalContent, isDarkMode && styles.darkModalContent]}>
-                            <Text style={[styles.modalTitle, isDarkMode && styles.darkTitle]}>Reset Password</Text>
+                {/* Logout */}
+                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+                    <MaterialIcons name="logout" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.logoutBtnText}>Logout</Text>
+                </TouchableOpacity>
 
-                            <View style={styles.modalPasswordContainer}>
+                <Text style={styles.versionText}>WTH Services v1.0.0</Text>
+
+            </ScrollView>
+
+            {/* Password Modal */}
+            <Modal visible={isPasswordModalVisible} transparent animationType="fade" onRequestClose={() => setIsPasswordModalVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContentWrapper}>
+                        <View style={[styles.modalCard, isDarkMode && styles.darkCard]}>
+                            <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>Change Password</Text>
+
+                            <View style={[styles.modalInputBox, isDarkMode && styles.darkInputBox]}>
                                 <TextInput
-                                    style={[styles.modalPasswordInput, isDarkMode && styles.darkModalInput]}
+                                    style={[styles.modalInput, isDarkMode && styles.darkText]}
                                     placeholder="Current Password"
-                                    placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                    placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
                                     secureTextEntry={!isCurrentPasswordVisible}
                                     value={currentPassword}
                                     onChangeText={setCurrentPassword}
                                 />
-                                <TouchableOpacity
-                                    style={styles.eyeIcon}
-                                    onPress={() => setIsCurrentPasswordVisible(!isCurrentPasswordVisible)}
-                                >
-                                    <MaterialIcons
-                                        name={isCurrentPasswordVisible ? "visibility" : "visibility-off"}
-                                        size={24}
-                                        color={isDarkMode ? "#FFF" : "#666"}
-                                    />
+                                <TouchableOpacity onPress={() => setIsCurrentPasswordVisible(!isCurrentPasswordVisible)}>
+                                    <MaterialIcons name={isCurrentPasswordVisible ? "visibility" : "visibility-off"} size={20} color="#94A3B8" />
                                 </TouchableOpacity>
                             </View>
 
-                            <View style={styles.modalPasswordContainer}>
+                            <View style={[styles.modalInputBox, isDarkMode && styles.darkInputBox]}>
                                 <TextInput
-                                    style={[styles.modalPasswordInput, isDarkMode && styles.darkModalInput]}
+                                    style={[styles.modalInput, isDarkMode && styles.darkText]}
                                     placeholder="New Password"
-                                    placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                    placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
                                     secureTextEntry={!isNewPasswordVisible}
                                     value={newPassword}
                                     onChangeText={setNewPassword}
                                 />
-                                <TouchableOpacity
-                                    style={styles.eyeIcon}
-                                    onPress={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
-                                >
-                                    <MaterialIcons
-                                        name={isNewPasswordVisible ? "visibility" : "visibility-off"}
-                                        size={24}
-                                        color={isDarkMode ? "#FFF" : "#666"}
-                                    />
+                                <TouchableOpacity onPress={() => setIsNewPasswordVisible(!isNewPasswordVisible)}>
+                                    <MaterialIcons name={isNewPasswordVisible ? "visibility" : "visibility-off"} size={20} color="#94A3B8" />
                                 </TouchableOpacity>
                             </View>
 
-                            <View style={styles.modalPasswordContainer}>
+                            <View style={[styles.modalInputBox, isDarkMode && styles.darkInputBox]}>
                                 <TextInput
-                                    style={[styles.modalPasswordInput, isDarkMode && styles.darkModalInput]}
+                                    style={[styles.modalInput, isDarkMode && styles.darkText]}
                                     placeholder="Confirm New Password"
-                                    placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                    placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
                                     secureTextEntry={!isConfirmPasswordVisible}
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
                                 />
-                                <TouchableOpacity
-                                    style={styles.eyeIcon}
-                                    onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
-                                >
-                                    <MaterialIcons
-                                        name={isConfirmPasswordVisible ? "visibility" : "visibility-off"}
-                                        size={24}
-                                        color={isDarkMode ? "#FFF" : "#666"}
-                                    />
+                                <TouchableOpacity onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}>
+                                    <MaterialIcons name={isConfirmPasswordVisible ? "visibility" : "visibility-off"} size={20} color="#94A3B8" />
                                 </TouchableOpacity>
                             </View>
 
-                            <View style={styles.modalButtons}>
-                                <TouchableOpacity
-                                    style={[styles.modalButton, styles.cancelButton]}
-                                    onPress={() => setIsPasswordModalVisible(false)}
-                                >
-                                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                            <View style={styles.modalActionRow}>
+                                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsPasswordModalVisible(false)}>
+                                    <Text style={styles.modalCancelText}>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.modalButton, styles.saveButton]}
-                                    onPress={handleResetPassword}
-                                    disabled={isResetting}
-                                >
-                                    {isResetting ? (
-                                        <ActivityIndicator color="#FFF" size="small" />
-                                    ) : (
-                                        <Text style={styles.saveButtonText}>Confirm</Text>
-                                    )}
+                                <TouchableOpacity style={styles.modalConfirmBtn} onPress={handleResetPassword} disabled={isResetting}>
+                                    {isResetting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.modalConfirmText}>Update</Text>}
                                 </TouchableOpacity>
                             </View>
                         </View>
                     </KeyboardAvoidingView>
-                </Modal>
-
-                {/* Logout Section */}
-                <TouchableOpacity style={[styles.logoutButton, isDarkMode && styles.darkLogoutButton]} onPress={handleLogout}>
-                    <Text style={styles.logoutButtonText}>Logout</Text>
-                </TouchableOpacity>
-            </ScrollView>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F5F7FA',
-    },
-    darkContainer: {
-        backgroundColor: '#000000', // Shiny Shiny Black
-    },
+    container: { flex: 1, backgroundColor: '#F8FAFC' },
+    darkContainer: { backgroundColor: '#0F172A' },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#EEE',
-    },
-    darkHeader: {
-        borderBottomColor: '#1A1A1A',
-        backgroundColor: '#000000',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    darkTitle: {
-        color: '#FFFFFF',
-    },
-    backButton: {
-        padding: 5,
-    },
-    backButtonText: {
-        fontSize: 16,
-        color: '#68BA7F',
-    },
-    darkBackText: {
-        color: '#68BA7F',
-    },
-    content: {
         alignItems: 'center',
-        paddingTop: 40,
-        paddingBottom: 20,
+        justifyContent: 'space-between',
     },
-    imageSection: {
-        marginBottom: 30,
-    },
-    imageWrapper: {
-        position: 'relative',
-    },
-    profileImage: {
-        width: 150,
-        height: 150,
-        borderRadius: 75,
-        backgroundColor: '#E1E8EE',
-    },
-    imagePlaceholder: {
+    headerBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: '#FFF',
         justifyContent: 'center',
         alignItems: 'center',
+        elevation: 2,
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
     },
-    darkPlaceholder: {
-        backgroundColor: '#1A1A1A',
-    },
-    placeholderText: {
-        fontSize: 60,
-    },
-    editButton: {
+    darkHeaderBtn: { backgroundColor: '#1E293B' },
+    headerTitle: { fontSize: 18, fontWeight: '800', color: '#1E293B' },
+    darkText: { color: '#F8FAFC' },
+    scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+    imageSection: { alignItems: 'center', marginBottom: 32 },
+    imageWrapper: { position: 'relative', marginBottom: 16 },
+    profileImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: '#FFF' },
+    placeholderBox: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#F1F5F9' },
+    editImageBtn: {
         position: 'absolute',
-        bottom: 5,
-        right: 5,
-        backgroundColor: '#253D2C',
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        bottom: 0,
+        right: 0,
+        backgroundColor: '#2E8B57',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 3,
-        borderColor: '#FFF',
+        borderColor: '#F8FAFC',
     },
-    darkEditButton: {
-        borderColor: '#000000',
-        backgroundColor: '#68BA7F',
-    },
-    editButtonText: {
-        color: '#FFF',
-        fontSize: 18,
-    },
-    infoSection: {
-        width: '90%',
+    userNameText: { fontSize: 24, fontWeight: '800', color: '#1E293B', marginBottom: 4 },
+    userEmailText: { fontSize: 14, color: '#64748B', fontWeight: '500' },
+    sectionCard: {
         backgroundColor: '#FFF',
-        borderRadius: 15,
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        marginBottom: 40,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        elevation: 2,
-    },
-    darkInfoSection: {
-        backgroundColor: '#0A0A0A', // Glassmorphism-ish shiny black
-        borderWidth: 1,
-        borderColor: '#1F1F1F',
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-    },
-    infoItem: {
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
-    },
-    darkInfoItem: {
-        borderBottomColor: '#1A1A1A',
-    },
-    themeItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottomWidth: 0,
-    },
-    infoLabel: {
-        fontSize: 12,
-        color: '#888',
-        fontWeight: '600',
-        marginBottom: 5,
-        textTransform: 'uppercase',
-    },
-    darkInfoLabel: {
-        color: '#666',
-    },
-    infoValue: {
-        fontSize: 16,
-        color: '#333',
-        fontWeight: '500',
-    },
-    darkInfoValue: {
-        color: '#E0E0E0',
-    },
-    logoutButton: {
-        backgroundColor: '#253D2C',
-        width: '90%',
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
+        borderRadius: 24,
+        padding: 20,
         marginBottom: 20,
+        elevation: 2,
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 15,
     },
-    darkLogoutButton: {
-        backgroundColor: '#1E3123', // Darker shade of primary
-    },
-    logoutButtonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    labelRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 5,
-    },
-    editActionText: {
-        fontSize: 12,
-        color: '#68BA7F',
-        fontWeight: 'bold',
-    },
-    editActions: {
-        flexDirection: 'row',
-    },
-    saveAction: {
-        marginRight: 10,
-    },
-    saveActionText: {
-        fontSize: 12,
-        color: '#68BA7F',
-        fontWeight: 'bold',
-    },
-    cancelActionText: {
-        fontSize: 12,
-        color: '#FF5252',
-        fontWeight: 'bold',
-    },
-    nameInput: {
-        fontSize: 16,
-        color: '#333',
-        paddingVertical: 5,
-        borderBottomWidth: 1,
-        borderBottomColor: '#68BA7F',
-    },
-    darkNameInput: {
-        color: '#FFFFFF',
-    },
-    resetPasswordText: {
-        fontSize: 16,
-        color: '#68BA7F',
-        fontWeight: '500',
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+    darkCard: { backgroundColor: '#1E293B' },
+    sectionLabel: { fontSize: 13, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 1 },
+    darkLabel: { color: '#64748B' },
+    infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+    infoIconBox: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#F0FDF4',
         justifyContent: 'center',
         alignItems: 'center',
+        marginRight: 16,
     },
-    modalContent: {
-        width: '85%',
-        backgroundColor: '#FFF',
-        borderRadius: 20,
-        padding: 25,
-        elevation: 5,
-    },
-    darkModalContent: {
-        backgroundColor: '#0A0A0A',
-        borderWidth: 1,
-        borderColor: '#1F1F1F',
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center',
-        color: '#333',
-    },
-    modalInput: {
-        backgroundColor: '#F5F5F5',
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 15,
-        fontSize: 14,
-        color: '#333',
-    },
-    darkModalInput: {
-        backgroundColor: '#1A1A1A',
-        color: '#FFF',
-    },
-    modalPasswordContainer: {
+    infoTitle: { fontSize: 12, fontWeight: '600', color: '#64748B', marginBottom: 2 },
+    infoValue: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
+    divider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 4 },
+    editingRow: { flexDirection: 'row', alignItems: 'center' },
+    nameInput: { flex: 1, fontSize: 16, fontWeight: '700', padding: 0, color: '#1E293B' },
+    saveBtn: { marginRight: 12 },
+    logoutBtn: {
+        backgroundColor: '#EF4444',
         flexDirection: 'row',
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F5F5F5',
-        borderRadius: 10,
-        marginBottom: 15,
-    },
-    modalPasswordInput: {
-        flex: 1,
-        padding: 15,
-        fontSize: 14,
-        color: '#333',
-    },
-    eyeIcon: {
-        padding: 10,
-        paddingRight: 15,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
         marginTop: 10,
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 4,
     },
-    modalButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 10,
+    logoutBtnText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+    versionText: { textAlign: 'center', color: '#94A3B8', fontSize: 12, marginTop: 32 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'center', padding: 20 },
+    modalContentWrapper: { width: '100%' },
+    modalCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 24 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: '#1E293B', marginBottom: 20, textAlign: 'center' },
+    modalInputBox: {
+        flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        height: 56,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
-    cancelButton: {
-        marginRight: 10,
-        backgroundColor: '#F5F5F5',
+    darkInputBox: { backgroundColor: '#0F172A', borderColor: '#334155' },
+    modalInput: { flex: 1, fontSize: 15, color: '#1E293B' },
+    modalActionRow: { flexDirection: 'row', marginTop: 20 },
+    modalCancelBtn: { flex: 1, height: 52, justifyContent: 'center', alignItems: 'center' },
+    modalCancelText: { color: '#64748B', fontWeight: '700' },
+    modalConfirmBtn: {
+        flex: 2,
+        height: 52,
+        backgroundColor: '#2E8B57',
+        borderRadius: 26,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#2E8B57',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
     },
-    saveButton: {
-        backgroundColor: '#253D2C',
-    },
-    cancelButtonText: {
-        color: '#666',
-        fontWeight: 'bold',
-    },
-    saveButtonText: {
-        color: '#FFF',
-        fontWeight: 'bold',
-    },
+    modalConfirmText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
 });
 
 export default Profile;

@@ -10,6 +10,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -54,61 +55,83 @@ const Signup = () => {
 
     return (
         <SafeAreaView style={[styles.container, isDarkMode && styles.darkContainer]}>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isDarkMode ? '#0F172A' : '#F8FAFC'} />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={{ flex: 1 }}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Text style={[styles.backButtonText, isDarkMode && styles.darkBackText]}>← Back</Text>
-                    </TouchableOpacity>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
+                    {/* Header Section */}
                     <View style={styles.header}>
-                        <Text style={[styles.title, isDarkMode && styles.darkTitle]}>Create Account</Text>
-                        <Text style={[styles.subtitle, isDarkMode && styles.darkSubtitle]}>Join WTH Services today</Text>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                            <MaterialIcons name="arrow-back" size={24} color={isDarkMode ? "#F8FAFC" : "#1E293B"} />
+                        </TouchableOpacity>
+
+                        <View style={styles.headerTextContainer}>
+                            <Text style={[styles.title, isDarkMode && styles.darkTitle]}>Create Account</Text>
+                            <Text style={[styles.subtitle, isDarkMode && styles.darkSubtitle]}>Join WTH Services for free</Text>
+                        </View>
                     </View>
 
+                    {/* Form Section */}
                     <View style={styles.form}>
-                        <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Full Name</Text>
-                        <TextInput
-                            style={[styles.input, isDarkMode && styles.darkInput]}
-                            placeholder="John Doe"
-                            placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                            value={name}
-                            onChangeText={setName}
-                        />
-
-                        <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Email Address</Text>
-                        <TextInput
-                            style={[styles.input, isDarkMode && styles.darkInput]}
-                            placeholder="john@example.com"
-                            placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            value={email}
-                            onChangeText={setEmail}
-                        />
-
-                        <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Password</Text>
-                        <View style={styles.passwordContainer}>
-                            <TextInput
-                                style={[styles.passwordInput, isDarkMode && styles.darkInput]}
-                                placeholder="••••••••"
-                                placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                                secureTextEntry={!isPasswordVisible}
-                                value={password}
-                                onChangeText={setPassword}
-                            />
-                            <TouchableOpacity
-                                style={styles.eyeIcon}
-                                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                            >
-                                <MaterialIcons
-                                    name={isPasswordVisible ? "visibility" : "visibility-off"}
-                                    size={24}
-                                    color={isDarkMode ? "#FFF" : "#666"}
+                        {/* Name Input */}
+                        <View style={styles.inputWrapper}>
+                            <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Full Name</Text>
+                            <View style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}>
+                                <MaterialIcons name="person" size={20} color={isDarkMode ? "#94A3B8" : "#9CA3AF"} style={styles.inputIcon} />
+                                <TextInput
+                                    style={[styles.input, isDarkMode && styles.darkInput]}
+                                    placeholder="John Doe"
+                                    placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
+                                    value={name}
+                                    onChangeText={setName}
                                 />
-                            </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* Email Input */}
+                        <View style={styles.inputWrapper}>
+                            <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Email Address</Text>
+                            <View style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}>
+                                <MaterialIcons name="email" size={20} color={isDarkMode ? "#94A3B8" : "#9CA3AF"} style={styles.inputIcon} />
+                                <TextInput
+                                    style={[styles.input, isDarkMode && styles.darkInput]}
+                                    placeholder="name@example.com"
+                                    placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    value={email}
+                                    onChangeText={setEmail}
+                                />
+                            </View>
+                        </View>
+
+                        {/* Password Input */}
+                        <View style={styles.inputWrapper}>
+                            <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Password</Text>
+                            <View style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}>
+                                <MaterialIcons name="lock" size={20} color={isDarkMode ? "#94A3B8" : "#9CA3AF"} style={styles.inputIcon} />
+                                <TextInput
+                                    style={[styles.input, isDarkMode && styles.darkInput]}
+                                    placeholder="Create a password"
+                                    placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
+                                    secureTextEntry={!isPasswordVisible}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                                    style={styles.eyeIcon}
+                                >
+                                    <MaterialIcons
+                                        name={isPasswordVisible ? "visibility" : "visibility-off"}
+                                        size={20}
+                                        color={isDarkMode ? "#94A3B8" : "#9CA3AF"}
+                                    />
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         <TouchableOpacity
@@ -124,13 +147,16 @@ const Signup = () => {
                         </TouchableOpacity>
                     </View>
 
+                    {/* Footer Section */}
                     <View style={styles.footer}>
+                        <Text style={[styles.footerText, isDarkMode && styles.darkFooterText]}>
+                            Already have an account?
+                        </Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={[styles.footerText, isDarkMode && styles.darkSubtitle]}>
-                                Already have an account? <Text style={[styles.linkText, isDarkMode && styles.darkLinkText]}>Login</Text>
-                            </Text>
+                            <Text style={styles.linkText}>Sign In</Text>
                         </TouchableOpacity>
                     </View>
+
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -140,123 +166,141 @@ const Signup = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#F8FAFC', // Slate 50
     },
     darkContainer: {
-        backgroundColor: '#000',
+        backgroundColor: '#0F172A', // Slate 900
     },
     scrollContent: {
-        padding: 24,
         flexGrow: 1,
-    },
-    backButton: {
-        marginBottom: 20,
-    },
-    backButtonText: {
-        fontSize: 16,
-        color: '#68BA7F',
-    },
-    darkBackText: {
-        color: '#68BA7F',
+        paddingHorizontal: 24,
+        paddingVertical: 40,
     },
     header: {
-        marginBottom: 40,
-        marginTop: 20,
+        marginBottom: 32,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        marginBottom: 24,
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 1,
+    },
+    headerTextContainer: {
+        marginTop: 10,
     },
     title: {
         fontSize: 32,
-        fontWeight: 'bold',
-        color: '#253D2C',
-        marginBottom: 10,
+        fontWeight: '800',
+        color: '#1E293B', // Slate 800
+        marginBottom: 8,
+        letterSpacing: 0.5,
     },
     darkTitle: {
-        color: '#FFFFFF',
+        color: '#F8FAFC',
     },
     subtitle: {
         fontSize: 16,
-        color: '#666',
+        color: '#64748B', // Slate 500
     },
     darkSubtitle: {
-        color: '#888',
+        color: '#94A3B8',
     },
     form: {
-        marginBottom: 30,
+        marginBottom: 32,
+    },
+    inputWrapper: {
+        marginBottom: 20,
     },
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#333',
+        color: '#334155', // Slate 700
         marginBottom: 8,
         marginLeft: 4,
     },
     darkLabel: {
-        color: '#E0E0E0',
+        color: '#CBD5E1', // Slate 300
     },
-    input: {
-        backgroundColor: '#f9f9f9',
-        borderWidth: 1,
-        borderColor: '#eee',
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
-        color: '#333',
-        marginBottom: 20,
-    },
-    darkInput: {
-        backgroundColor: '#0A0A0A',
-        borderColor: '#1F1F1F',
-        color: '#FFF',
-    },
-    passwordContainer: {
+    inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f9f9f9',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: '#eee',
-        borderRadius: 12,
-        marginBottom: 20,
+        borderColor: '#E2E8F0', // Slate 200
+        height: 56,
+        paddingHorizontal: 16,
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 2,
     },
-    passwordInput: {
+    darkInputContainer: {
+        backgroundColor: '#1E293B', // Slate 800
+        borderColor: '#334155', // Slate 700
+    },
+    inputIcon: {
+        marginRight: 12,
+    },
+    input: {
         flex: 1,
-        padding: 16,
         fontSize: 16,
-        color: '#333',
+        color: '#1E293B',
+        height: '100%',
+    },
+    darkInput: {
+        color: '#F8FAFC',
     },
     eyeIcon: {
-        padding: 10,
-        paddingRight: 15,
+        padding: 8,
     },
     actionBtn: {
-        backgroundColor: '#253D2C',
-        paddingVertical: 16,
-        borderRadius: 12,
+        backgroundColor: '#2E8B57',
+        height: 56,
+        borderRadius: 28, // Pill shape
+        justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#253D2C',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 3,
+        marginTop: 10,
+        shadowColor: '#2E8B57',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+        elevation: 8,
     },
     actionBtnText: {
-        color: '#fff',
+        color: '#FFFFFF',
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
     footer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
         marginTop: 'auto',
-        paddingBottom: 20,
+        marginBottom: 20,
     },
     footerText: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 15,
+        color: '#64748B',
+        marginRight: 6,
+    },
+    darkFooterText: {
+        color: '#94A3B8',
     },
     linkText: {
-        color: '#68BA7F',
-        fontWeight: 'bold',
-    },
-    darkLinkText: {
-        color: '#68BA7F',
+        color: '#2E8B57',
+        fontSize: 15,
+        fontWeight: '700',
     },
 });
 
