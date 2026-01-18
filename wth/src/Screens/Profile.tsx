@@ -40,6 +40,9 @@ const Profile = () => {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] = useState(false);
+    const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
+    const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
 
     useEffect(() => {
@@ -321,30 +324,56 @@ const Profile = () => {
                         <View style={[styles.modalContent, isDarkMode && styles.darkModalContent]}>
                             <Text style={[styles.modalTitle, isDarkMode && styles.darkTitle]}>Reset Password</Text>
 
-                            <TextInput
-                                style={[styles.modalInput, isDarkMode && styles.darkModalInput]}
-                                placeholder="Current Password"
-                                placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                                secureTextEntry
-                                value={currentPassword}
-                                onChangeText={setCurrentPassword}
-                            />
-                            <TextInput
-                                style={[styles.modalInput, isDarkMode && styles.darkModalInput]}
-                                placeholder="New Password"
-                                placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                                secureTextEntry
-                                value={newPassword}
-                                onChangeText={setNewPassword}
-                            />
-                            <TextInput
-                                style={[styles.modalInput, isDarkMode && styles.darkModalInput]}
-                                placeholder="Confirm New Password"
-                                placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                                secureTextEntry
-                                value={confirmPassword}
-                                onChangeText={setConfirmPassword}
-                            />
+                            <View style={styles.modalPasswordContainer}>
+                                <TextInput
+                                    style={[styles.modalPasswordInput, isDarkMode && styles.darkModalInput]}
+                                    placeholder="Current Password"
+                                    placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                    secureTextEntry={!isCurrentPasswordVisible}
+                                    value={currentPassword}
+                                    onChangeText={setCurrentPassword}
+                                />
+                                <TouchableOpacity
+                                    style={styles.eyeIcon}
+                                    onPress={() => setIsCurrentPasswordVisible(!isCurrentPasswordVisible)}
+                                >
+                                    <Text>{isCurrentPasswordVisible ? '🙈' : '👁️'}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.modalPasswordContainer}>
+                                <TextInput
+                                    style={[styles.modalPasswordInput, isDarkMode && styles.darkModalInput]}
+                                    placeholder="New Password"
+                                    placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                    secureTextEntry={!isNewPasswordVisible}
+                                    value={newPassword}
+                                    onChangeText={setNewPassword}
+                                />
+                                <TouchableOpacity
+                                    style={styles.eyeIcon}
+                                    onPress={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                                >
+                                    <Text>{isNewPasswordVisible ? '🙈' : '👁️'}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.modalPasswordContainer}>
+                                <TextInput
+                                    style={[styles.modalPasswordInput, isDarkMode && styles.darkModalInput]}
+                                    placeholder="Confirm New Password"
+                                    placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                    secureTextEntry={!isConfirmPasswordVisible}
+                                    value={confirmPassword}
+                                    onChangeText={setConfirmPassword}
+                                />
+                                <TouchableOpacity
+                                    style={styles.eyeIcon}
+                                    onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+                                >
+                                    <Text>{isConfirmPasswordVisible ? '🙈' : '👁️'}</Text>
+                                </TouchableOpacity>
+                            </View>
 
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity
@@ -611,6 +640,23 @@ const styles = StyleSheet.create({
     darkModalInput: {
         backgroundColor: '#1A1A1A',
         color: '#FFF',
+    },
+    modalPasswordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F5F5F5',
+        borderRadius: 10,
+        marginBottom: 15,
+    },
+    modalPasswordInput: {
+        flex: 1,
+        padding: 15,
+        fontSize: 14,
+        color: '#333',
+    },
+    eyeIcon: {
+        padding: 10,
+        paddingRight: 15,
     },
     modalButtons: {
         flexDirection: 'row',

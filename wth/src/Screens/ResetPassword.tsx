@@ -22,6 +22,8 @@ const ResetPassword = () => {
     const [token, setToken] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
+    const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async () => {
@@ -89,24 +91,40 @@ const ResetPassword = () => {
                         />
 
                         <Text style={[styles.label, isDarkMode && styles.darkLabel]}>New Password</Text>
-                        <TextInput
-                            style={[styles.input, isDarkMode && styles.darkInput]}
-                            placeholder="••••••••"
-                            placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                            secureTextEntry
-                            value={newPassword}
-                            onChangeText={setNewPassword}
-                        />
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={[styles.passwordInput, isDarkMode && styles.darkInput]}
+                                placeholder="••••••••"
+                                placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                secureTextEntry={!isNewPasswordVisible}
+                                value={newPassword}
+                                onChangeText={setNewPassword}
+                            />
+                            <TouchableOpacity
+                                style={styles.eyeIcon}
+                                onPress={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                            >
+                                <Text>{isNewPasswordVisible ? '🙈' : '👁️'}</Text>
+                            </TouchableOpacity>
+                        </View>
 
                         <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Confirm New Password</Text>
-                        <TextInput
-                            style={[styles.input, isDarkMode && styles.darkInput]}
-                            placeholder="••••••••"
-                            placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                            secureTextEntry
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                        />
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={[styles.passwordInput, isDarkMode && styles.darkInput]}
+                                placeholder="••••••••"
+                                placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                secureTextEntry={!isConfirmPasswordVisible}
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                            />
+                            <TouchableOpacity
+                                style={styles.eyeIcon}
+                                onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+                            >
+                                <Text>{isConfirmPasswordVisible ? '🙈' : '👁️'}</Text>
+                            </TouchableOpacity>
+                        </View>
 
                         <TouchableOpacity
                             style={styles.actionBtn}
@@ -202,6 +220,26 @@ const styles = StyleSheet.create({
         backgroundColor: '#0A0A0A',
         borderColor: '#1F1F1F',
         color: '#FFF',
+    },
+
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f9f9f9',
+        borderWidth: 1,
+        borderColor: '#eee',
+        borderRadius: 12,
+        marginBottom: 20,
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 16,
+        fontSize: 16,
+        color: '#333',
+    },
+    eyeIcon: {
+        padding: 10,
+        paddingRight: 15,
     },
     actionBtn: {
         backgroundColor: '#253D2C',

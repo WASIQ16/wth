@@ -22,6 +22,7 @@ const Login = () => {
     const { isDarkMode } = useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
@@ -77,14 +78,22 @@ const Login = () => {
                         />
 
                         <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Password</Text>
-                        <TextInput
-                            style={[styles.input, isDarkMode && styles.darkInput]}
-                            placeholder="••••••••"
-                            placeholderTextColor={isDarkMode ? "#666" : "#999"}
-                            secureTextEntry
-                            value={password}
-                            onChangeText={setPassword}
-                        />
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={[styles.passwordInput, isDarkMode && styles.darkInput]}
+                                placeholder="••••••••"
+                                placeholderTextColor={isDarkMode ? "#666" : "#999"}
+                                secureTextEntry={!isPasswordVisible}
+                                value={password}
+                                onChangeText={setPassword}
+                            />
+                            <TouchableOpacity
+                                style={styles.eyeIcon}
+                                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                            >
+                                <Text>{isPasswordVisible ? '🙈' : '👁️'}</Text>
+                            </TouchableOpacity>
+                        </View>
 
                         <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn}>
                             <Text style={[styles.forgotText, isDarkMode && styles.darkLinkText]}>Forgot Password?</Text>
@@ -183,6 +192,25 @@ const styles = StyleSheet.create({
         backgroundColor: '#0A0A0A',
         borderColor: '#1F1F1F',
         color: '#FFF',
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f9f9f9',
+        borderWidth: 1,
+        borderColor: '#eee',
+        borderRadius: 12,
+        marginBottom: 20,
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 16,
+        fontSize: 16,
+        color: '#333',
+    },
+    eyeIcon: {
+        padding: 10,
+        paddingRight: 15,
     },
     forgotBtn: {
         alignSelf: 'flex-end',
