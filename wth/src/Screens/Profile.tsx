@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
-import { launchImageLibrary } from 'react-native-image-picker';
+import ImagePicker from 'react-native-image-crop-picker';
 import { getProfile, resetPassword, updateProfile, uploadProfileImage } from '../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -92,51 +92,50 @@ const Profile = () => {
     };
 
     const handleSelectImage = async () => {
-        const result = await launchImageLibrary({
-            mediaType: 'photo',
-            quality: 1,
-        });
-
-        if (result.didCancel) {
-            console.log('User cancelled image picker');
-        } else if (result.errorCode) {
-            console.log('ImagePicker Error: ', result.errorMessage);
-            Alert.alert('Error', result.errorMessage || 'Failed to pick image');
-        } else if (result.assets && result.assets.length > 0) {
-            const asset = result.assets[0];
-            const source = { uri: asset.uri };
+        try {
+            const image = await ImagePicker.openPicker({
+                width: 300,
+                height: 300,
+                cropping: true,
+                cropperCircleOverlay: true,
+                mediaType: 'photo',
+                compressImageQuality: 0.8,
+            });
 
             // Start uploading to Cloudinary via Backend
             setIsUploadingImage(true);
-            try {
-                const formData = new FormData();
-                formData.append('avatar', {
-                    uri: asset.uri,
-                    type: asset.type || 'image/jpeg',
-                    name: asset.fileName || 'profile.jpg',
-                } as any);
 
-                console.log('📤 Uploading image with details:', {
-                    uri: asset.uri,
-                    type: asset.type,
-                    fileName: asset.fileName,
-                    fileSize: asset.fileSize
-                });
+            const formData = new FormData();
+            const filename = image.path.split('/').pop() || 'profile.jpg';
 
-                const response = await uploadProfileImage(formData);
-                setProfileImage({ uri: response.profileImage });
-                Alert.alert('Success', 'Profile image updated successfully');
-            } catch (error: any) {
+            formData.append('avatar', {
+                uri: image.path,
+                type: image.mime,
+                name: filename,
+            } as any);
+
+            console.log('📤 Uploading image with details:', {
+                uri: image.path,
+                type: image.mime,
+                fileName: filename,
+            });
+
+            const response = await uploadProfileImage(formData);
+            setProfileImage({ uri: response.profileImage });
+            Alert.alert('Success', 'Profile image updated successfully');
+
+        } catch (error: any) {
+            if (error.code !== 'E_PICKER_CANCELLED') {
                 console.error('Error uploading image:', error);
-                console.error('Error details:', JSON.stringify(error, null, 2));
 
                 // Show detailed error message
                 const errorMsg = error.error || error.message || 'Failed to upload image';
-                const errorCode = error.code ? ` (Code: ${error.code})` : '';
-                Alert.alert('Error', `${errorMsg}${errorCode}`);
-            } finally {
-                setIsUploadingImage(false);
+                Alert.alert('Error', errorMsg);
+            } else {
+                console.log('User cancelled image picker');
             }
+        } finally {
+            setIsUploadingImage(false);
         }
     };
 
