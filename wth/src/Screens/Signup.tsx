@@ -16,8 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
-import { signupUser } from '../api/auth';
+import { signupUser, checkEmailExists } from '../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback } from 'react';
+import debounce from 'lodash/debounce';
 
 const Signup = () => {
     const navigation = useAppNavigation();
@@ -27,6 +29,54 @@ const Signup = () => {
     const [password, setPassword] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [emailError, setEmailError] = useState('');
+    const [isEmailValidating, setIsEmailValidating] = useState(false);
+
+    const validateEmailFormat = (email: string) => {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(email);
+    };
+
+    const checkEmail = useCallback(
+        debounce(async (emailToCheck: string) => {
+            if (!emailToCheck) {
+                setEmailError('');
+                return;
+            }
+
+            if (!validateEmailFormat(emailToCheck)) {
+                setEmailError('Invalid email format');
+                return;
+            }
+
+            setIsEmailValidating(true);
+            try {
+                const result = await checkEmailExists(emailToCheck);
+                if (result.status === 'taken') {
+                    setEmailError('Email already exists');
+                    Alert.alert('Invalid Email', 'This email is already registered. Please use a different one or sign in.');
+                } else if (result.status === 'invalid_provider') {
+                    setEmailError('Invalid email provider');
+                    Alert.alert('Invalid Email', 'The email account for this email does not exist. Please check your spelling or use a real account.');
+                } else {
+                    setEmailError('');
+                }
+            } catch (error: any) {
+                console.error('Email validation error:', error);
+                // Be lenient on network errors but log them
+            } finally {
+                setIsEmailValidating(false);
+            }
+        }, 800),
+        []
+    );
+
+    const handleEmailChange = (text: string) => {
+        const cleanEmail = text.trim();
+        setEmail(cleanEmail);
+        setEmailError('');
+        checkEmail(cleanEmail);
+    };
 
     const handleSignup = async () => {
         if (!name || !email || !password) {
@@ -97,15 +147,21 @@ const Signup = () => {
                             <View style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}>
                                 <MaterialIcons name="email" size={20} color={isDarkMode ? "#94A3B8" : "#9CA3AF"} style={styles.inputIcon} />
                                 <TextInput
-                                    style={[styles.input, isDarkMode && styles.darkInput]}
+                                    style={[
+                                        styles.input,
+                                        isDarkMode && styles.darkInput,
+                                        emailError ? styles.errorInput : null
+                                    ]}
                                     placeholder="name@example.com"
                                     placeholderTextColor={isDarkMode ? "#64748B" : "#94A3B8"}
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     value={email}
-                                    onChangeText={setEmail}
+                                    onChangeText={handleEmailChange}
                                 />
+                                {isEmailValidating && <ActivityIndicator size="small" color="#2E8B57" style={{ marginRight: 8 }} />}
                             </View>
+                            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                         </View>
 
                         {/* Password Input */}
@@ -135,9 +191,9 @@ const Signup = () => {
                         </View>
 
                         <TouchableOpacity
-                            style={styles.actionBtn}
+                            style={[styles.actionBtn, (loading || !!emailError || isEmailValidating) && styles.disabledBtn]}
                             onPress={handleSignup}
-                            disabled={loading}
+                            disabled={loading || !!emailError || isEmailValidating}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
@@ -301,6 +357,20 @@ const styles = StyleSheet.create({
         color: '#2E8B57',
         fontSize: 15,
         fontWeight: '700',
+    },
+    errorInput: {
+        borderColor: '#EF4444',
+    },
+    errorText: {
+        color: '#EF4444',
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
+    },
+    disabledBtn: {
+        opacity: 0.6,
+        backgroundColor: '#94A3B8',
+        shadowOpacity: 0.1,
     },
 });
 

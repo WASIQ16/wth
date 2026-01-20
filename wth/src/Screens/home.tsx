@@ -217,7 +217,8 @@ const Home: React.FC<Props> = () => {
         {/* Services Grid */}
         <View style={styles.servicesHeader}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>Quick Services</Text>
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigate('Services')}>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>

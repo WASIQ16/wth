@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const dns = require('dns').promises;
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const upload = require('../config/cloudinaryConfig');
@@ -47,6 +48,49 @@ router.post('/signup', [
 
     } catch (err) {
         console.error('💥 Signup Server Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/auth/check-email
+// @desc    Check if email is valid and available
+router.post('/check-email', [
+    check('email', 'Please include a valid email').isEmail()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ status: 'invalid_format', message: 'Invalid email format' });
+    }
+
+    const { email } = req.body;
+    const domain = email.split('@')[1];
+
+    try {
+        // 1. Check local database
+        const user = await User.findOne({ email });
+        if (user) {
+            return res.json({ status: 'taken', message: 'Email is already registered' });
+        }
+
+        // 2. Check domain MX records (existence check)
+        try {
+            const mxRecords = await dns.resolveMx(domain);
+            if (!mxRecords || mxRecords.length === 0) {
+                return res.json({ status: 'invalid_provider', message: 'Email provider does not exist' });
+            }
+        } catch (dnsErr) {
+            console.warn(`⚠️ DNS check failed for ${domain}:`, dnsErr.code);
+            // ENOTFOUND or ENODATA usually means domain doesn't exist or has no mail servers
+            if (dnsErr.code === 'ENOTFOUND' || dnsErr.code === 'ENODATA') {
+                return res.json({ status: 'invalid_provider', message: 'Email provider does not exist' });
+            }
+            // For other DNS errors (like timeouts), we might want to be lenient or log it
+        }
+
+        return res.json({ status: 'available', message: 'Email is available' });
+
+    } catch (err) {
+        console.error('💥 Check Email Server Error:', err.message);
         res.status(500).send('Server Error');
     }
 });

@@ -122,3 +122,11 @@ export const resetPasswordWithToken = async (token: string, newPassword: string)
     }
 };
 
+export const checkEmailExists = async (email: string): Promise<any> => {
+    try {
+        const response = await apiClient.post('/auth/check-email', { email });
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data || { message: 'Email check failed' };
+    }
+};
