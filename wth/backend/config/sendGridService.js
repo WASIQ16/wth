@@ -68,6 +68,59 @@ const sendPasswordResetEmail = async (email, resetToken) => {
     }
 };
 
+const sendSignupOTP = async (email, otp) => {
+    const msg = {
+        to: email,
+        from: process.env.SENDGRID_FROM_EMAIL,
+        subject: 'Verify your email - WTH',
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #2E8B57; color: white; padding: 15px; text-align: center; border-radius: 8px 8px 0 0; }
+                    .content { padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; }
+                    .otp-box { background: #f4f4f4; padding: 15px; text-align: center; letter-spacing: 5px; font-weight: bold; font-size: 24px; margin: 20px 0; border: 1px dashed #2E8B57; color: #2E8B57; }
+                    .footer { font-size: 12px; color: #666; text-align: center; margin-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h2>📧 Email Verification</h2>
+                    </div>
+                    <div class="content">
+                        <p>Hello,</p>
+                        <p>Thank you for signing up with WTH. Please use the following OTP to verify your email address:</p>
+                        
+                        <div class="otp-box">
+                            ${otp}
+                        </div>
+                        
+                        <p>This OTP expires in 10 minutes.</p>
+                        <p>If you didn't request this, please ignore this email.</p>
+                    </div>
+                    <div class="footer">
+                        <p>&copy; 2026 WTH App</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    };
+
+    try {
+        await sgMail.send(msg);
+        console.log('✅ Signup OTP Sent successfully to:', email);
+        return { success: true };
+    } catch (error) {
+        console.error('❌ SendGrid API Error:', error);
+        throw error;
+    }
+};
+
 const verifyConfig = async () => {
     if (!process.env.SENDGRID_API_KEY) {
         console.error('❌ SENDGRID_API_KEY is missing!');
@@ -82,5 +135,6 @@ const verifyConfig = async () => {
 
 module.exports = {
     sendPasswordResetEmail,
+    sendSignupOTP,
     verifyConfig
 };

@@ -18,10 +18,10 @@ export const loginUser = async (email: string, password: string): Promise<any> =
     }
 };
 
-export const signupUser = async (fullName: string, email: string, password: string): Promise<any> => {
+export const signupUser = async (fullName: string, email: string, password: string, otp: string): Promise<any> => {
     console.log('📡 Calling Signup API:', { fullName, email });
     try {
-        const response = await apiClient.post('/auth/signup', { fullName, email, password });
+        const response = await apiClient.post('/auth/signup', { fullName, email, password, otp });
         console.log('✅ Signup Response:', response.status);
         return response.data;
     } catch (error: any) {
@@ -128,5 +128,14 @@ export const checkEmailExists = async (email: string): Promise<any> => {
         return response.data;
     } catch (error: any) {
         throw error.response?.data || { message: 'Email check failed' };
+    }
+};
+
+export const sendSignupOTP = async (email: string): Promise<any> => {
+    try {
+        const response = await apiClient.post('/auth/send-signup-otp', { email });
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data || { message: 'Failed to send OTP' };
     }
 };

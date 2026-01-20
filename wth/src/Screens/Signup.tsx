@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAppNavigation } from '../navigation/NavigationContext';
 import { useTheme } from '../theme/ThemeContext';
-import { signupUser, checkEmailExists } from '../api/auth';
+import { signupUser, checkEmailExists, sendSignupOTP } from '../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback } from 'react';
 import debounce from 'lodash/debounce';
@@ -84,21 +84,22 @@ const Signup = () => {
             return;
         }
 
+        if (emailError) {
+            Alert.alert('Error', emailError);
+            return;
+        }
+
         setLoading(true);
         try {
-            const data = await signupUser(name, email, password);
-
-            // Store token securely
-            await AsyncStorage.setItem('user_token', data.token);
-            await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
-
+            await sendSignupOTP(email);
             setLoading(false);
-            Alert.alert('Success', 'Account created successfully!', [
-                { text: 'Start Exploring', onPress: () => navigation.replace('Home') },
-            ]);
+
+            // Navigate to verification screen with user data
+            navigation.navigate('Verification', { name, email, password });
+
         } catch (error: any) {
             setLoading(false);
-            const message = error.message || (error.errors && error.errors[0]?.msg) || 'Something went wrong';
+            const message = error.message || 'Failed to send verification code. Please try again.';
             Alert.alert('Signup Failed', message);
         }
     };

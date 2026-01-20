@@ -4,17 +4,19 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const dns = require('dns').promises;
 const User = require('../models/User');
+const OTP = require('../models/OTP');
 const auth = require('../middleware/auth');
 const upload = require('../config/cloudinaryConfig');
 const { check, validationResult } = require('express-validator');
-const { sendPasswordResetEmail } = require('../config/sendGridService');
+const { sendPasswordResetEmail, sendSignupOTP } = require('../config/sendGridService');
 
 // @route   POST api/auth/signup
 // @desc    Register user
 router.post('/signup', [
     check('fullName', 'Name is required').not().isEmpty(),
     check('email', 'Please include a valid email').isEmail(),
-    check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 })
+    check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
+    check('otp', 'OTP is required').not().isEmpty()
 ], async (req, res) => {
     console.log('📝 Signup Request Received:', req.body);
     const errors = validationResult(req);
@@ -23,9 +25,17 @@ router.post('/signup', [
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, otp } = req.body;
 
     try {
+        // 1. Verify OTP
+        const otpRecord = await OTP.findOne({ email, otp });
+        if (!otpRecord) {
+            console.log('❌ Signup Failed: Invalid or expired OTP');
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        // 2. Check if user already exists
         let user = await User.findOne({ email });
         if (user) {
             console.log('❌ Signup Failed: User already exists');
@@ -34,6 +44,10 @@ router.post('/signup', [
 
         user = new User({ fullName, email, password });
         await user.save();
+
+        // Remove OTP record after successful signup
+        await OTP.deleteOne({ _id: otpRecord._id });
+
         console.log('✅ User saved successfully:', user.email);
 
         const payload = { user: { id: user.id } };
@@ -91,6 +105,47 @@ router.post('/check-email', [
 
     } catch (err) {
         console.error('💥 Check Email Server Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/auth/send-signup-otp
+// @desc    Send OTP for signup verification
+router.post('/send-signup-otp', [
+    check('email', 'Please include a valid email').isEmail()
+], async (req, res) => {
+    console.log('📨 Signup OTP Request Received:', req.body.email);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email } = req.body;
+
+    try {
+        // 1. Check if user already exists
+        const user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        // 2. Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // 3. Save OTP to database (upsert)
+        await OTP.findOneAndUpdate(
+            { email },
+            { otp, createdAt: new Date() },
+            { upsert: true, new: true }
+        );
+
+        // 4. Send email
+        await sendSignupOTP(email, otp);
+
+        res.json({ message: 'OTP sent successfully to your email' });
+
+    } catch (err) {
+        console.error('💥 Send OTP Server Error:', err.message);
         res.status(500).send('Server Error');
     }
 });

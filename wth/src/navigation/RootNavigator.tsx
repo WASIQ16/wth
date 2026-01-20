@@ -13,6 +13,7 @@ import Profile from '../Screens/Profile';
 import Services from '../Screens/Services';
 import ForgotPassword from '../Screens/ForgotPassword';
 import ResetPassword from '../Screens/ResetPassword';
+import Verification from '../Screens/Verification';
 
 export default function RootNavigator() {
   const [stack, setStack] = useState<Route[]>([{ name: 'Splash' }]);
@@ -69,6 +70,9 @@ export default function RootNavigator() {
       break;
     case 'ResetPassword':
       Screen = <ResetPassword />;
+      break;
+    case 'Verification':
+      Screen = <Verification route={top} />;
       break;
     default:
       Screen = <Home />;
